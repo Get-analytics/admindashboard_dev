@@ -1,0 +1,94 @@
+.metrics-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Updated Card Style */
+.metric-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #F6F5F3;
+    padding: 10px 20px;
+    border-radius: 16px;
+    border: 1px solid #EEE;
+    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.08), 0px 4px 8px rgba(0, 0, 0, 0.05);
+    position: relative;
+    min-width: 220px;
+    gap: 20px;
+    cursor: pointer;
+    height: 100px;
+}
+
+/* Active State: change entire card background color */
+.metric-card.active {
+    background: #7C5832;
+    border-color: #7C5832;
+}
+
+/* Ensure text inside active card is white */
+.metric-card.active .metric-title,
+.metric-card.active .metric-value {
+    color: #fff;
+}
+
+/* Change the expand icon color when active */
+.metric-card.active .metric-icon-right {
+    filter: brightness(0) invert(1);
+}
+
+/* Left Circular Placeholder */
+.metric-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #E1DFDC;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.metric-icon img {
+    width: 20px;
+    height: 20px;
+}
+
+/* Right-side Expand Icon */
+.metric-icon-right {
+    width: 24px;
+    height: 24px;
+    filter: grayscale(40%);
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+.metric-icon-right:hover {
+    transform: scale(1.1);
+}
+
+.metric-content {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    flex-grow: 1;
+    gap: 8px; /* Reduce space between title and value */
+}
+
+.metric-title {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 0;
+    line-height: 1.1;
+}
+
+.metric-value {
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 0;
+    line-height: 1.1;
+}
+ 
+

@@ -1,0 +1,91 @@
+/* Card Container */
+.time-spend-card {
+    width: 450px; /* Adjust as needed */
+    font-family: "Product Sans", sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  /* Header */
+  .time-spend-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  /* Icon Circle */
+  .icon-background {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #e8e2db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .icon-image {
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* Title Text */
+  .title-container {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .title-small {
+    font-size: 14px;
+    color: #9a8f87;
+    margin: 0;
+  }
+  
+  .title-large {
+    font-size: 20px;
+    font-weight: bold;
+    color: #3a2e26;
+    margin: 0;
+  }
+  
+  /* Chart & Legend Section */
+  .chart-legend-section {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  /* Chart Wrapper */
+  .chart-wrapper {
+    flex: 1;
+    min-width: 200px; /* Ensures a reasonable chart size */
+  }
+  
+  /* Legend */
+  .legend-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 120px;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  
+  .legend-text {
+    font-size: 14px;
+    color: #3a2e26;
+  }
+  

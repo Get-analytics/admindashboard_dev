@@ -1,0 +1,197 @@
+/* Container */
+.analytics-container {
+    width: 100%;
+    max-width: 700px;
+    font-family: "Product Sans", sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  /* Session Header */
+  .session-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 2px;
+  }
+  
+  .session-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #e8e2db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .session-icon img {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .sub-heading {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .card-heading {
+    font-size: 14px;
+    color: #9a8f87;
+    margin: 0;
+    line-height: 1.2;
+  }
+  
+  .click-count {
+    font-size: 20px;
+    font-weight: bold;
+    color: #3a2e26;
+    margin: 0;
+  }
+  
+  /* Section Title */
+  .title-header {
+    font-size: 18px;
+    font-weight: bold;
+    color: #3a2e26;
+    margin-bottom: 12px;
+  }
+  
+  /* MOST VIEWED PAGE SECTION */
+  .page-views {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .details-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+  }
+  
+  /* File Info */
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .file-image {
+    width: 80px;
+    height: 100px;
+    object-fit: cover;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+  }
+  
+  .text-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .duration {
+    font-size: 20px;
+    font-weight: bold;
+    color: #3a2e26;
+    margin: 0;
+  }
+  
+  .average-time {
+    font-size: 14px;
+    color: #8c8279;
+    margin: 0;
+  }
+  
+  .page-id {
+    font-size: 14px;
+    color: #3a2e26;
+    margin: 0;
+  }
+  
+  /* Graph Area */
+  .graph-container {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .graph-caption {
+    font-size: 14px;
+    color: #8c8279;
+    margin-top: 5px;
+    text-align: center;
+  }
+  
+  /* MOST SELECTED TEXT SECTION */
+  .highlighted-text {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .text-box {
+    background-color: #fdf9f5;
+    border: 1px solid #e6e1db;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .quote-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #3a2e26;
+    margin: 0;
+    font-style: italic;
+  }
+  
+  /* Page details below quote */
+  .page-details {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .page-tag {
+    font-size: 14px;
+    color: #3a2e26;
+    margin: 0;
+  }
+  
+  .page-number {
+    font-size: 18px;
+    font-weight: bold;
+    color: #7c5832;
+    margin: 0;
+  }
+  
+  /* Navigation Buttons */
+  .navigation-buttons {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .button-nav {
+    background: #e8e2db;
+    border: none;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    color: #3a2e26;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  
+  .button-nav:hover {
+    background: #dcd3c7;
+  }
+  

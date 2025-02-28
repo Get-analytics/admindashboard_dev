@@ -1,0 +1,140 @@
+/* Container Card */
+.traffic-card {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: "Product Sans", sans-serif;
+  background: #fff;
+}
+
+/* Header */
+.traffic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.traffic-header h3 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1e1e1e;
+  margin: 0;
+}
+
+.view-options {
+  font-size: 14px;
+  font-weight: normal;
+  position: relative;
+  right: 7px;
+}
+
+.view-options span {
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.active-view {
+  color: #7c5832;
+  font-weight: bold;
+}
+
+.inactive-view {
+  color: #ddb691;
+}
+
+/* Content Area */
+.traffic-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 85%;
+}
+
+/* Map View */
+.traffic-map {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  max-width: 600px;
+  overflow: hidden;
+  position: relative;
+  right: 1rem;
+}
+
+/* List View */
+.traffic-list {
+  width: 100%;
+}
+
+.traffic-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.traffic-list th,
+.traffic-list td {
+  padding: 10px;
+  text-align: left;
+  font-size: 14px;
+  border-bottom: 1px solid #ddd;
+}
+
+.traffic-list th {
+  color: #7c5832;
+  font-weight: bold;
+}
+
+.traffic-list td {
+  color: #333;
+}
+
+/* Icon Styling (for list view) */
+.icon {
+  vertical-align: middle;
+  margin-left: 5px;
+  font-size: 16px;
+}
+
+.icon.up {
+  color: green;
+}
+
+.icon.down {
+  color: red;
+}
+
+.icon.eye {
+  color: #7c5832;
+  height: 18px;
+  width: 18px;
+}
+
+/* Progress Bar */
+/* Add this to your map.css file or the appropriate stylesheet */
+.progress-bar {
+  width: 100%;
+  height: 8px; /* Adjusted height */
+  background-color: #f1f1f1;
+  border-radius: 5px;
+  overflow: hidden; /* Prevents the progress bar from going beyond the container */
+}
+
+.progress {
+  height: 100%; /* Full height of the progress bar */
+  transition: width 0.3s ease;
+}
+
+.progress.up {
+  background-color: #4caf50;
+}
+
+.progress.down {
+  background-color: #f44336;
+}
