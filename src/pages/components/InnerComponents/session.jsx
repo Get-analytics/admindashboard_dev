@@ -22,10 +22,10 @@ const Session = () => {
 
           const updatedCategory = category === "Web" ? "weblink" : category;
           const apiEndpoints = {
-            pdf: "http://localhost:5000/api/v1/pdf/session",
-            web: "http://localhost:5000/api/v1/web/session",
-            video: "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/video/session",
-            docx: "http://localhost:5000/api/v1/docx/session",
+            pdf: "https://admin-dashboard-backend-rust.vercel.app/api/v1/pdf/session",
+            web: "https://admin-dashboard-backend-rust.vercel.app/api/v1/web/session",
+            video: "https://admin-dashboard-backend-rust.vercel.app/api/v1/video/session",
+            docx: "https://admin-dashboard-backend-rust.vercel.app/v1/docx/session",
           };
 
           const apiUrl = apiEndpoints[updatedCategory];
