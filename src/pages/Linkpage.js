@@ -66,7 +66,7 @@ const Linkpage = () => {
   const fetchDashboardData = async (authToken, UUID) => {
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/v1/client/dashboard",
+        "https://admin-dashboard-backend-rust.vercel.app/api/v1/client/dashboard",
         { authToken, UUID }
       );
       if (response.status === 200) {
