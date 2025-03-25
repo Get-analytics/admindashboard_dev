@@ -1,82 +1,55 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import axios from "axios";
-import "react-toastify/dist/ReactToastify.css";
-import "./Register.css"; // Import CSS file
+import React, { useEffect, useState } from "react";
+import { signInWithGoogle } from "../../firebaseconfig"; // Firebase Google login method
+import { useNavigate, useLocation } from "react-router-dom";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const Register = () => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const auth = getAuth();
+  const [redirected, setRedirected] = useState(false); // Prevent multiple redirects
 
-  // Check if the user is already logged in (optional)
   useEffect(() => {
-    const token = JSON.parse(localStorage.getItem("auth"));
-    if (token) {
-      toast.success("You are already logged in");
-      navigate("/linkpage");
-    }
-  }, [navigate]);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && !redirected && location.pathname !== "/linkpage") {
+        const storedUUID = localStorage.getItem("UUID");
+        
+        if (!storedUUID || storedUUID !== user.uid) {
+          const tokenId = await user.getIdToken();
+          localStorage.setItem("UUID", user.uid);
+          localStorage.setItem("AuthToken", tokenId);
+        }
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+        setRedirected(true); // Prevent multiple redirects
+        navigate("/linkpage");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth, navigate, redirected, location.pathname]);
+
+  const handleGoogleLogin = async () => {
     try {
-      const payload = { username, email, password };
-      const response = await axios.post("http://localhost:5000/api/v1/register", payload);
-      toast.success("Registration successful");
-      navigate("/login"); // Redirect to login after successful registration
+      const result = await signInWithGoogle();
+      console.log("Google login result user:", result.user);
+
+      const tokenId = await result.user.getIdToken();
+      const userId = result.user.uid;
+
+      // Store token and UID
+      localStorage.setItem("AuthToken", tokenId);
+      localStorage.setItem("UUID", userId);
+
+      navigate("/linkpage"); // Redirect after successful login
     } catch (error) {
-      console.error("Registration Error:", error);
-      toast.error(error.response?.data?.message || "Registration failed");
+      console.error("Google registration error:", error.message);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <h2 className="login-title">Create an Account</h2>
-        <form onSubmit={handleSubmit} className="login-form">
-          <input
-           
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Username"
-            className="input-field"
-            required
-          />
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="input-field"
-            required
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="input-field"
-            required
-          />
-          <button type="submit" className="login-button">Register</button>
-
-          <div className="separator-container">
-            <span>or</span>
-            <div className="separator-line"></div>
-          </div>
-
-        
-
-          <div className="login-footer">
-            <span>Already have an account? <a href="/login" className="login-link">Login</a></span>
-          </div>
-        </form>
-      </div>
+    <div>
+      <h2>Register</h2>
+      <button onClick={handleGoogleLogin}>Register with Google</button>
     </div>
   );
 };

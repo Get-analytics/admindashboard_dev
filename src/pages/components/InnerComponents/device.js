@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
 import { useRecordContext } from "../../../context/RecordContext";
+import { MobileOutlined } from '@ant-design/icons'; // Import the MobileOutlined icon from Ant Design
 import "./device.css";
 
 const COLORS = ["#7C5832", "#B79F85", "#9E7C62", "#D8C4B6"];
@@ -28,10 +29,10 @@ const Device = () => {
       setError(null);
 
       const apiEndpoints = {
-        pdf: "http://localhost:5000/api/v1/pdf/device",
-        weblink: "http://localhost:5000/api/v1/web/device",
-        video: "http://localhost:5000/api/v1/video/device",
-        docx: "http://localhost:5000/api/v1/docx/device",
+        pdf: "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/pdf/device",
+        weblink: "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/web/device",
+        video: "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/video/device",
+        docx: "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/docx/device",
       };
 
       const apiUrl = apiEndpoints[updatedCategory];
@@ -94,8 +95,6 @@ const Device = () => {
       show: false, // Set this to false to hide the legend (dots at the bottom)
     },
   };
-  
-  
 
   const chartSeries = deviceData.map(entry => parseFloat(entry.value.toFixed(2))); // Ensure values are rounded to 2 decimals
 
@@ -103,7 +102,7 @@ const Device = () => {
     <div className="time-spend-card">
       <div className="time-spend-header">
         <div className="icon-background">
-          <img src="tv.svg" alt="Devices Icon" className="icon-image" />
+          <MobileOutlined style={{ fontSize: '20px', color: '#6C4E2A' }} /> {/* Use MobileOutlined icon */}
         </div>
         <div className="title-container">
           <p className="title-small">Devices Used</p>

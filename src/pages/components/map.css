@@ -64,8 +64,9 @@
   height: auto;
   max-width: 600px;
   overflow: hidden;
-  position: relative;
-  right: 1rem;
+  /* Remove or comment out any offset: */
+  /* position: relative; */
+  /* right: 1rem; */
 }
 
 /* List View */
@@ -117,13 +118,12 @@
 }
 
 /* Progress Bar */
-/* Add this to your map.css file or the appropriate stylesheet */
 .progress-bar {
   width: 100%;
   height: 8px; /* Adjusted height */
   background-color: #f1f1f1;
   border-radius: 5px;
-  overflow: hidden; /* Prevents the progress bar from going beyond the container */
+  overflow: hidden;
 }
 
 .progress {
@@ -138,3 +138,4 @@
 .progress.down {
   background-color: #f44336;
 }
+

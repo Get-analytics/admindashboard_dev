@@ -4,13 +4,10 @@ import "./linkpage.css";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
-import { Modal, Input, Space, Button, Tooltip, Spin, Alert } from "antd";
+import { Modal, Input, Space, Button, Progress, Alert } from "antd";
 import {
   CopyOutlined,
   LinkOutlined,
-  CloudUploadOutlined,
-  EyeOutlined,
-  DeleteOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
@@ -26,8 +23,11 @@ const Linkpage = () => {
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [generatedLink, setGeneratedLink] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
-  // Loader state during uploads
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // New state for file drag status
+  const [isDragging, setIsDragging] = useState(false);
 
   // State for dashboard table data
   const [allTableData, setAllTableData] = useState([]);
@@ -44,29 +44,25 @@ const Linkpage = () => {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
-  // (Optional) Custom Alert Component
-  const AlertNoti = () => {
-    return <Alert message="Success Text" type="success" />;
-  };
-
-  // On component mount, retrieve AuthToken and UUID from localStorage and store in state.
   useEffect(() => {
-    let token = localStorage.getItem("AuthToken");
-    let uuid = localStorage.getItem("UUID");
+    const token = localStorage.getItem("AuthToken");
+    const uuid = localStorage.getItem("UUID");
+  
+    // If no token or uuid found, navigate to login
     if (!token || !uuid) {
       navigate("/login");
     } else {
-      uuid = uuid ? uuid.replace(/^"(.*)"$/, "$1") : "";
-      token = token ? token.replace(/^"(.*)"$/, "$1") : "";
-      setUserInfo({ authToken: token, uuid: uuid });
-      // Delay API call by 3 seconds
-      setTimeout(() => {
+      // Only set user info if not already set to avoid infinite rerender
+      if (!userInfo.authToken || !userInfo.uuid || userInfo.authToken !== token || userInfo.uuid !== uuid) {
+        setUserInfo({ authToken: token, uuid: uuid });
         fetchDashboardData(token, uuid);
-      }, 3000);
+      }
     }
-  }, [navigate]);
+  }, [ navigate]); // Use userInfo as a dependency to avoid infinite rerenders
+  
+  
+  
 
-  // Fetch dashboard data and flatten it
   const fetchDashboardData = async (authToken, UUID) => {
     try {
       const response = await axios.post(
@@ -86,31 +82,19 @@ const Linkpage = () => {
   };
 
   const handleViewAnalytics = async (record) => {
-    // Extract URL from the clicked row record.
     const url = record.url;
-
-    // Get the token and UUID from localStorage.
     let token = localStorage.getItem("AuthToken");
     let uuid = localStorage.getItem("UUID");
     if (uuid && token) {
-      // Remove any extra quotes if necessary.
       uuid = uuid.replace(/^"(.*)"$/, "$1");
       token = token.replace(/^"(.*)"$/, "$1");
     }
-
-    // Prepare the payload
-    const payload = {
-      url, // URL from the clicked row
-      uuid, // User's UUID
-      token, // Auth Token
-    };
-
+    const payload = { url, uuid, token };
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/v1/analytics",
+        "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/analytics",
         payload
       );
-      // Process the response as needed:
       console.log("Analytics data:", response.data);
       toast.success("Analytics data fetched successfully");
     } catch (error) {
@@ -119,36 +103,32 @@ const Linkpage = () => {
     }
   };
 
-  // Flatten data from each category into one array.
-  // Each record now includes: url, category, createdDate, and timeAgo.
   const flattenDashboardData = (data) => {
-    let flat = [];
-    ["web", "docx", "pdf", "video"].forEach((category) => {
-      if (Array.isArray(data[category])) {
-        data[category].forEach((item, index) => {
-          flat.push({
-            key: `${category}-${index}-${item.url}`, // Ensure key is unique
-            url: item.url,
-            category: category.charAt(0).toUpperCase() + category.slice(1),
-            // Convert to full ISO string to help with sorting
-            createdDate: new Date(item.createdDate).toISOString(),
-            timeAgo: item.timeAgo, // Use backend precomputed timeAgo value
-          });
-        });
-      }
+    let flattenedData = {};
+    Object.keys(data).forEach((category) => {
+      flattenedData[category] = data[category].map((record, index) => ({
+        key: `${category}-${index}-${record.url}`,
+        url: record.url,
+        fileName: record.fileName, // Ensure this is preserved
+        category: category,
+        createdDate: record.createdDate,
+        timeAgo: record.timeAgo,
+      }));
     });
-    return flat;
+    return flattenedData;
   };
+  
 
   // Handlers for URL and file input changes
   const handleUrlChange = (e) => setUrl(e.target.value);
+  
+  // Update file state on selection. The auto-upload is handled by the useEffect below.
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   };
 
-  // Open the file manager
   const handleFileUploadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -156,16 +136,35 @@ const Linkpage = () => {
     }
   };
 
-  // If a file is selected, clicking the area triggers upload; otherwise, open the file manager.
+  // Drag & Drop Handlers for file upload
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
+
   const handleFileAreaClick = () => {
-    if (file) {
-      handleGenerateLink("file");
-    } else {
+    if (!file) {
       handleFileUploadClick();
     }
   };
 
-  // Function to copy a given URL to the clipboard (for table URLs)
   const handleCopyUrl = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -176,7 +175,6 @@ const Linkpage = () => {
     }
   };
 
-  // Helper function to parse the "timeAgo" string into seconds
   const parseTimeAgo = (timeAgo) => {
     if (!timeAgo) return 0;
     const parts = timeAgo.split(" ");
@@ -201,65 +199,79 @@ const Linkpage = () => {
     }
   };
 
-  // Generate a shortened link for URL or file uploads.
-  // Uses the values from userInfo (AuthToken and UUID) from state.
-  const handleGenerateLink = async (type) => {
-    if (type === "url" && !url) {
-      toast.warn("Please enter a URL.");
-      return;
-    }
-    if (type === "file" && !file) {
-      toast.warn("Please upload a file.");
-      return;
-    }
-    setIsButtonDisabled(true);
-    setUploading(true);
+const handleGenerateLink = async (type) => {
+  if (type === "url" && !url) {
+    toast.warn("Please enter a URL.");
+    return;
+  }
+  if (type === "file" && !file) {
+    toast.warn("Please upload a file.");
+    return;
+  }
+  setIsButtonDisabled(true);
+  setUploading(true);
+  setUploadProgress(0);
 
-    const randomId = uuidv4();
-    let apiEndpoint = "";
-    let payload = null;
-    let headers = {};
-
-    try {
-      if (type === "url") {
-        apiEndpoint = "http://localhost:5000/api/v1/linkupload";
-        payload = { shortId: randomId, originalUrl: url, uuid: userInfo.uuid };
-        headers["Content-Type"] = "application/json";
-      } else if (type === "file") {
-        apiEndpoint = "http://localhost:5000/api/v1/fileupload";
-        payload = new FormData();
-        payload.append("shortId", randomId);
-        payload.append("file", file);
-        payload.append("uuid", userInfo.uuid);
-      }
-      const response = await axios.post(apiEndpoint, payload, { headers });
-      if (response.status === 200) {
-        let link = "";
-        if (type === "url" && response.data.shortenedUrl) {
-          link = `http://localhost:3000/${response.data.shortenedUrl.shortId}`;
-        } else if (type === "file" && response.data.shortId) {
-          link = `http://localhost:3000/${response.data.shortId}`;
-        }
-        setGeneratedLink(link);
-        setIsModalVisible(true);
-        toast.success("Upload successful! Your shortened link is ready.");
-
-        // Immediately call fetchDashboardData using userInfo values.
-        fetchDashboardData(userInfo.authToken, userInfo.uuid);
-      } else {
-        toast.error("Failed to upload.");
-      }
-    } catch (error) {
-      toast.error("Error generating link: " + error.message);
-    } finally {
-      setIsButtonDisabled(false);
-      setUploading(false);
-      setFile(null);
-      setUrl("");
+  // Function to generate 5 random alphanumeric characters
+  const generateRandomId = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let randomId = "";
+    for (let i = 0; i < 5; i++) {
+      randomId += chars.charAt(Math.floor(Math.random() * chars.length));
     }
+    return randomId;
   };
 
-  // Copy the generated link to the clipboard (from modal)
+  const randomId = generateRandomId(); // Generate 5-character random ID
+  let apiEndpoint = "";
+  let payload = null;
+  let headers = {};
+
+  try {
+    if (type === "url") {
+      apiEndpoint = "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/linkupload";
+      payload = { shortId: randomId, originalUrl: url, uuid: userInfo.uuid };
+      headers["Content-Type"] = "application/json";
+    } else if (type === "file") {
+      apiEndpoint = "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/fileupload";
+      payload = new FormData();
+      payload.append("shortId", randomId);
+      payload.append("file", file);
+      payload.append("uuid", userInfo.uuid);
+    }
+    const response = await axios.post(apiEndpoint, payload, {
+      headers,
+      onUploadProgress: (progressEvent) => {
+        const percent = Math.floor((progressEvent.loaded * 100) / progressEvent.total);
+        setUploadProgress(percent);
+      },
+    });
+    if (response.status === 200) {
+      let link = "";
+      if (type === "url" && response.data.shortenedUrl) {
+        link = `https://filescence-rho.vercel.app/${response.data.shortenedUrl.shortId}`;
+      } else if (type === "file" && response.data.shortId) {
+        link = `https://filescence-rho.vercel.app/${response.data.shortId}`;
+      }
+      setGeneratedLink(link);
+      setIsModalVisible(true);
+      toast.success("Upload successful! Your shortened link is ready.");
+      fetchDashboardData(userInfo.authToken, userInfo.uuid);
+    } else {
+      toast.error("Failed to upload.");
+    }
+  } catch (error) {
+    toast.error("Error generating link: " + error.message);
+  } finally {
+    setIsButtonDisabled(false);
+    setUploading(false);
+    setUploadProgress(0);
+    setFile(null);
+    setUrl("");
+  }
+};
+
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(generatedLink);
@@ -270,8 +282,6 @@ const Linkpage = () => {
     }
   };
 
-
-  // ********* URL Column Search Functionality *********
   const getColumnSearchProps = (dataIndex) => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
       <div style={{ padding: 8 }}>
@@ -279,9 +289,7 @@ const Linkpage = () => {
           ref={searchInput}
           placeholder={`Search ${dataIndex}`}
           value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
           onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
           style={{ marginBottom: 8, display: "block" }}
         />
@@ -341,90 +349,108 @@ const Linkpage = () => {
     setSearchText("");
   };
 
+  const handleRedirect = () => {
+    if (generatedLink) {
+      window.open(generatedLink, "_blank");
+    }
+  };
+
+  // Auto-upload when file state is updated.
+  useEffect(() => {
+    if (file) {
+      handleGenerateLink("file");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file]);
+
   return (
-    <div style={{ position: "relative" }}>
-      {/* Loader Overlay */}
-      {uploading && (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(255,255,255,0.7)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 9999,
-          }}
-        >
-          <Spin size="large" tip="Uploading..." />
-        </div>
-      )}
-      <div className="container">
-        {/* URL Input Section */}
-        <div className="input-section">
-          <label className="input-label">Enter the URL</label>
-          <div className="input-box">
+    <div className="linkpage-container">
+      <div className="linkpage-hero">
+        <h1 className="linkpage-heading">Share Smarter, Track Better.</h1>
+        <p className="linkpage-subheading">
+          Shorten and share everything—in a single link, then dive into heat maps,
+          bounce rates, and location insights to uncover the story behind every click.
+        </p>
+      </div>
+
+      {/* Link Generation Container */}
+      <div className="linkpage-generation" style={{ position: "relative" }}>
+        {uploading && (
+          <div className="linkpage-upload-overlay">
+            <Progress percent={uploadProgress} status="active" strokeColor="#7C5832" />
+          </div>
+        )}
+
+        {/* Left Card: URL Input */}
+        <div className="linkpage-card">
+          <h2 className="linkpage-card-title">Enter your URL</h2>
+          <div className="linkpage-input">
             <input
               type="text"
               placeholder="Paste the URL"
               value={url}
               onChange={handleUrlChange}
-              disabled={isButtonDisabled || file}
             />
             <LinkOutlined
-              className="icon-button"
+              className="linkpage-icon-button"
               onClick={() => handleGenerateLink("url")}
             />
           </div>
-          <p className="note">Paste a link to generate a shortened URL.</p>
+          <p className="linkpage-note">
+            Note:<br />
+            Paste any publicly accessible link to<br />
+            generate a shareable short URL and<br />
+            gather engagement analytics
+          </p>
         </div>
 
-        <div className="divider"></div>
+        {/* Vertical Divider */}
+        <div className="linkpage-divider"></div>
 
-        {/* File Upload Section */}
-        <div className="input-section">
-          <label className="input-label">Drop Your Content</label>
-          <div className="input-box file-upload" onClick={handleFileAreaClick}>
+        {/* Right Card: File Upload with drag & drop */}
+        <div
+          className="linkpage-card"
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <h2 className="linkpage-card-title">Drop Your Content</h2>
+          <div
+            className={`linkpage-input linkpage-file-upload ${isDragging ? "dragging" : ""}`}
+            onClick={handleFileAreaClick}
+          >
             <span>{file ? file.name : "Upload Your Files"}</span>
             {file ? (
-              <LinkOutlined className="icon-button" />
+              <LinkOutlined className="linkpage-icon-button" />
             ) : (
-              <CloudUploadOutlined className="dropdown-icon" />
+              <div className="linkpage-icon-wrapper">
+                <img
+                  src="/upload copy.svg"
+                  alt="Upload Icon"
+                  className="linkpage-dropdown-icon"
+                />
+              </div>
             )}
           </div>
           <input
             type="file"
             ref={fileInputRef}
-            className="file-input"
+            className="linkpage-file-input"
             onChange={handleFileChange}
             style={{ display: "none" }}
             accept=".jpg,.png,.pdf,.docx,.mp4"
           />
-          <p className="note">Upload documents, PDFs, or images for sharing.</p>
+          <p className="linkpage-note">
+            Note:<br />
+            Upload PDFs, Docs, Images, or videos.<br />
+            Maximum file size varies by plan—upgrade anytime for<br />
+            higher limits and advanced analytics.
+          </p>
         </div>
-
-        {/* Modal to Display Generated Link */}
-        <Modal
-          title="Generated Link"
-          open={isModalVisible}
-          onCancel={() => setIsModalVisible(false)}
-          footer={null}
-          centered
-        >
-          <Input
-            value={generatedLink}
-            readOnly
-            addonAfter={
-              <CopyOutlined onClick={handleCopy} style={{ cursor: "pointer" }} />
-            }
-          />
-        </Modal>
       </div>
 
-      {/* Render the table as a separate component */}
+      {/* Dashboard Table Section */}
       <DashboardTable
         data={allTableData}
         currentPage={currentPage}
@@ -434,8 +460,27 @@ const Linkpage = () => {
         parseTimeAgo={parseTimeAgo}
         handleCopyUrl={handleCopyUrl}
         handleViewAnalytics={handleViewAnalytics}
-       
       />
+
+      {/* Modal for Generated Link */}
+      <Modal
+        title="Generated Link"
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={null}
+        centered
+      >
+        <Input
+          value={generatedLink}
+          readOnly
+          addonAfter={
+            <div style={{ display: "flex", gap: "10px" }}>
+              <CopyOutlined onClick={handleCopy} style={{ cursor: "pointer" }} />
+              <LinkOutlined onClick={handleRedirect} style={{ cursor: "pointer" }} />
+            </div>
+          }
+        />
+      </Modal>
     </div>
   );
 };

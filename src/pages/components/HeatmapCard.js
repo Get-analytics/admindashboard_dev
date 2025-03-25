@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './HeatmapCard.css'; // Import CSS
 import { useRecordContext } from '../../context/RecordContext';
+import { HeatMapOutlined } from '@ant-design/icons'; // Import HeatMapOutlined icon from Ant Design
 
 const HeatmapCard = () => {
   const [loading, setLoading] = useState(false);
@@ -20,7 +21,7 @@ const HeatmapCard = () => {
           setError(null);
 
           const updatedCategory = category === 'Web' ? 'weblink' : category;
-          const apiUrl = 'http://localhost:5000/api/v1/web/heatmap';
+          const apiUrl = 'https://admin-dashboard-backend-gqqz.onrender.com/api/v1/web/heatmap';
           const requestBody = {
             uuid,
             url,
@@ -96,7 +97,7 @@ const HeatmapCard = () => {
     <div className="heatmap-container">
       <div className="heatmap-header">
         <div className="heatmap-icon">
-          <img src="expanf.svg" alt="Expand" />
+          <HeatMapOutlined style={{ fontSize: '24px', color: '#6C4E2A' }} /> {/* AntD HeatMap Icon */}
         </div>
         <div className="sub-heading">
           <p className="card-heading">Heat Map</p>
@@ -113,13 +114,7 @@ const HeatmapCard = () => {
       {/* Display the image, and when clicked, show the full-screen iframe */}
       {!showIframe && !loading && !sessionData && (
         <div className="heatmap-image-container">
-          <img
-            src="https://via.placeholder.com/600x400" // Placeholder image for testing
-            alt="Heatmap"
-            className="heatmap-image"
-            onClick={handleImageClick}
-            style={{ cursor: 'pointer' }} // Ensure the cursor changes on hover
-          />
+         
         </div>
       )}
 

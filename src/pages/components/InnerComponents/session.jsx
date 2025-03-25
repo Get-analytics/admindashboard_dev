@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import Chart from "react-apexcharts";
+import ReactApexChart from "react-apexcharts"; // Import ReactApexChart
+import { FullscreenOutlined } from '@ant-design/icons'; // Import FullscreenOutlined from Ant Design
 import { useRecordContext } from "../../../context/RecordContext";
 import "./session.css";
 
 const Session = () => {
-  const [selectedRange, setSelectedRange] = useState("lastMonth");
+  const [selectedRange, setSelectedRange] = useState("today"); // Default to "today"
   const [sessionData, setSessionData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,10 +22,10 @@ const Session = () => {
 
           const updatedCategory = category === "Web" ? "weblink" : category;
           const apiEndpoints = {
-            Pdf: "http://localhost:5000/api/v1/pdf/session",
-            weblink: "http://localhost:5000/api/v1/web/session",
-            Video: "http://localhost:5000/api/v1/video/session",
-            Docx: "http://localhost:5000/api/v1/docx/session",
+            pdf: "http://localhost:5000/api/v1/pdf/session",
+            web: "http://localhost:5000/api/v1/web/session",
+            video: "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/video/session",
+            docx: "http://localhost:5000/api/v1/docx/session",
           };
 
           const apiUrl = apiEndpoints[updatedCategory];
@@ -104,7 +105,7 @@ const Session = () => {
       },
       dataLabels: { enabled: false },
       stroke: {
-        curve: "smooth",
+        curve: "smooth",  // Ensure smooth curve even for single data points
         width: 2,
       },
       xaxis: {
@@ -125,6 +126,11 @@ const Session = () => {
         theme: "dark",
         y: { formatter: (val) => `${val} Users` },
       },
+      grid: {
+        show: true,
+        borderColor: "#f1f1f1", // Add grid lines for better visibility
+        strokeDashArray: 5,  // Dashed lines for grid
+      },
     },
   };
 
@@ -132,7 +138,7 @@ const Session = () => {
     <div className="session-container">
       <div className="session-header">
         <div className="session-icon">
-          <img src="expanf.svg" alt="Expand" />
+          <FullscreenOutlined style={{ fontSize: '24px', color: '#6C4E2A' }} /> {/* Replace with FullscreenOutlined icon */}
         </div>
         <div className="sub-heading">
           <p className="card-heading">Overall</p>
@@ -161,7 +167,7 @@ const Session = () => {
         </div>
 
         <div className="line-chart-container" style={{ flexGrow: 1 }}>
-          <Chart options={chartData.options} series={chartData.series} type="area" height={300} />
+          <ReactApexChart options={chartData.options} series={chartData.series} type="area" height={300} />
         </div>
       </div>
     </div>

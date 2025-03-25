@@ -1,145 +1,112 @@
-/* General container styling */
+/* General Styles */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f5f5f5;
+  font-family: "Arial", sans-serif;
+}
+
+/* Login Container */
 .login-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 0 15px;
-  }
-  
-  /* Login box */
-  .login-box {
-    width: 100%;
-    max-width: 400px;
-    padding: 40px 32px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    border-radius: 15px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    text-align: center;
-    color: #333;
-  }
-  
-  /* Title */
-  .login-title {
-    font-size: 32px;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 30px;
-    text-transform: uppercase;
-  }
-  
-  /* Input fields */
-  .input-field {
-    width: 90%;
-    padding: 10px ;
-    font-size: 16px;
-    color: #333;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    outline: none;
-    margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.7);
-    transition: all 0.3s ease-in-out;
-  }
-  
-  .input-field:focus {
-    border: 1px solid #4CAF50;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
-  }
-  
-  /* Forgot password */
-  .forgot-password {
-    display: block;
-    text-align: right;
-    font-size: 14px;
-    color: #4CAF50;
-    text-decoration: none;
-    margin-bottom: 24px;
-  }
-  
-  .forgot-password:hover {
-    text-decoration: underline;
-  }
-  
-  /* Login button */
-  .login-button {
-    width: 100%;
-    padding: 14px;
-    font-size: 16px;
-    font-weight: bold;
-    color: white;
-    background-color: #4CAF50;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.3s ease-in-out, transform 0.2s ease;
-  }
-  
-  .login-button:hover {
-    background-color: #388E3C;
-    transform: translateY(-2px);
-  }
-  
-  /* Separator */
-  .separator-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 30px 0;
-    position: relative;
-  }
-  
-  .separator-container span {
-    position: absolute;
-    padding: 0 15px;
-    background-color: rgba(255, 255, 255, 0.8);
-    color: #ddd;
-    font-size: 14px;
-  }
-  
-  .separator-line {
-    width: 100%;
-    border-top: 1px solid #ddd;
-  }
-  
-  /* Facebook button */
-  .facebook-button {
-    width: 100%;
-    padding: 14px;
-    font-size: 16px;
-    font-weight: bold;
-    color: white;
-    background-color: #4267B2;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.3s ease-in-out, transform 0.2s ease;
-  }
-  
-  .facebook-button:hover {
-    background-color: #365899;
-    transform: translateY(-2px);
-  }
-  
-  /* Responsive */
-  @media (max-width: 500px) {
-    .login-box {
-      max-width: 90%;
-      padding: 30px 24px;
-    }
-    .login-title {
-      font-size: 26px;
-    }
-    .input-field {
-      padding: 12px 14px;
-      font-size: 14px;
-    }
-    .login-button, .facebook-button {
-      padding: 12px;
-      font-size: 14px;
-    }
-  }
-  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #fff;
+}
+
+/* Login Title with Underline */
+.login-title {
+  font-size: 32px;
+  margin-bottom: 20px;
+  font-weight: bold;
+  color: #333;
+  position: relative;
+  text-align: center; /* Center text properly */
+}
+
+/* Underline - Fixed to be centered */
+.underline {
+  display: block;
+  width: 250px; /* Increased width */
+  height: 1px;
+  background-color: #000;
+  border-radius: 3px;
+  margin: 8px auto 0;
+}
+
+/* Button Container */
+.login-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Login Button Styles */
+.login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Google Button */
+.google-btn {
+  background-color: #fff;
+  color: #333;
+}
+
+.google-btn:hover {
+  background-color: #f1f1f1;
+  transform: translateY(-3px);
+}
+
+/* Microsoft Button */
+.microsoft-btn {
+  background-color: #f3f3f3;
+  color: #2f2f2f;
+  cursor: not-allowed;
+}
+
+/* Apple Button */
+.apple-btn {
+  background-color: #000;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+/* Disabled Button */
+.login-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Button Hover Effects */
+.microsoft-btn:hover,
+.apple-btn:hover {
+  transform: translateY(-3px);
+}
+
+/* Icons */
+.login-icon {
+  font-size: 22px;
+}
+
+.microsoft-icon {
+  color: #0078d4;
+}
+
+.apple-icon {
+  color: #fff;
+}

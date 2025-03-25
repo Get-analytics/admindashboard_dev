@@ -9,12 +9,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./Mostviewpage.css";
+import { FileSearchOutlined } from "@ant-design/icons";
 import { useRecordContext } from "../../../context/RecordContext";
 
 const Mostviewpage = () => {
   const { record } = useRecordContext();
-  const { uuid, token, url, category } = record || {};
-  console.log( uuid, token, url, category , "datafrom mostviewed")
+  // Correct destructuring to get uid from userInfo
+  const { uuid, url, category, userInfo: { uid } = {} } = record || {};
+  console.log(uuid, uid, url, category, "data from most viewed");
 
   const [analyticsData, setAnalyticsData] = useState(null); // State to hold the response data
   const [loading, setLoading] = useState(true); // Loading state to show a loader until data is fetched
@@ -23,23 +25,30 @@ const Mostviewpage = () => {
   // Fetch analytics data when component mounts
   useEffect(() => {
     const fetchAnalyticsData = async () => {
+      console.log(category + " category", url + " url", "most view");
+      console.log(uid + " uid", uuid + " uuid", "most view");
+
       try {
-        if (!uuid || !token || !url || !category) return;
-  
-        // Determine the API endpoint dynamically
+        if (!uuid || !url || !category || !uid) return;
+
+        // Determine the API endpoint dynamically based on category
         const endpoint =
-          category === "Docx" || category === "Doc"
-            ? "http://localhost:5000/api/v1/docx/viewanalytics"
-            : "http://localhost:5000/api/v1/pdf/viewanalytics";
-  
+          category === "docx" || category === "doc"
+            ? "https://admin-dashboard-backend-rust.vercel.app/api/v1/docx/viewanalytics"
+            : "https://admin-dashboard-backend-rust.vercel.app/api/v1/pdf/viewanalytics";
+
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ uuid, token, url, category }),
+          body: JSON.stringify({ uuid, token: uid, url, category }),
         });
-  
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
         const data = await response.json();
         setAnalyticsData(data); // Set the response data to state
       } catch (error) {
@@ -48,9 +57,9 @@ const Mostviewpage = () => {
         setLoading(false); // Set loading to false once data is fetched
       }
     };
-  
+
     fetchAnalyticsData();
-  }, [uuid, token, url, category]); // Fetch data when any of these values change
+  }, [uuid, uid, url, category]); // Fetch data when any of these values change
   
   if (loading) {
     return <div>Loading...</div>; // Show loading message while waiting for data
@@ -110,19 +119,19 @@ const pageData = Object.entries(totalPageTime || {}).map(([page, timeInSeconds])
     <div className="analytics-container">
       {/* Header with Icon and Sub-heading */}
       <div className="session-header">
-        <div className="session-icon">
-          <img src="search.svg" alt="Expand" />
-        </div>
-        <div className="sub-heading">
-          <p className="click-count">Most viewed Page</p>
-        </div>
-      </div>
+  <div className="session-icon">
+    <FileSearchOutlined style={{ fontSize: '24px', color: '#7C5832' }} /> {/* Use the Ant Design FileSearch icon */}
+  </div>
+  <div className="sub-heading">
+    <p className="click-count">Most viewed Page</p>
+  </div>
+</div>
 
       {/* Most Viewed Page Section */}
       <div className="page-views">
         <div className="details-container">
           <div className="file-info">
-            <img src="image.png" alt="PDF Icon" className="file-image" />
+            <img src="https://t3.ftcdn.net/jpg/02/26/42/06/360_F_226420649_vlXjp3JyUrnW5EHY00dvhbqkVdUfyafj.jpg" alt="PDF Icon" className="file-image" />
             <div className="text-info">
               <p className="duration">{formatTime(averageTimeReadable)}</p>
               <p className="average-time">Avg Time Spend</p>

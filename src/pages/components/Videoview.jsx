@@ -9,89 +9,186 @@ import {
   CurrentTimeDisplay,
   DurationDisplay,
   TimeDivider,
-  PlaybackRateMenuButton
+  PlaybackRateMenuButton,
+  ProgressControl,
 } from "video-react";
 import "video-react/dist/video-react.css";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+
+import {
+  AreaChart,
+  Area,
+  Tooltip,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  ReferenceLine,
+  CartesianGrid,
+} from "recharts";
+
 import { useRecordContext } from "../../context/RecordContext";
 
-const VideoWithAdvancedFeatures = () => {
-  const [analyticsData, setAnalyticsData] = useState(null); // State to hold the response data
-  const [loading, setLoading] = useState(true); // Loading state to show a loader until data is fetched
+const formatSeconds = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+};
 
+const CustomTooltip = ({ active, payload }) => {
+  if (!active || !payload || !payload.length) return null;
+  const dataPoint = payload[0].payload;
+  const watchedPercent =
+    dataPoint.watched != null ? `${dataPoint.watched}% watched` : "N/A";
+
+  return (
+    <div
+      style={{
+        background: "rgba(0, 0, 0, 0.8)",
+        padding: "8px 12px",
+        borderRadius: "5px",
+        color: "#fff",
+        fontSize: "14px",
+      }}
+    >
+      <div>
+        <strong>Time:</strong> {formatSeconds(dataPoint.time)}
+      </div>
+      <div>
+        <strong>Views:</strong> {dataPoint.views.toLocaleString()}
+      </div>
+      <div>
+        {/* <strong>Watched:</strong> {watchedPercent} */}
+      </div>
+    </div>
+  );
+};
+
+const VimeoLikeRetention = () => {
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const playerRef = useRef(null);
-  const playbackRate = 1;
 
   const { record } = useRecordContext();
   const { uuid, token, url, category } = record || {};
-  console.log(uuid, token, url, category, "datafrom mostviewed");
 
-  // Fetch data when component mounts
   useEffect(() => {
     const fetchAnalyticsData = async () => {
       try {
         if (!uuid || !token || !url || !category) return;
 
-        // API endpoint
-        const endpoint = "http://localhost:5000/api/v1/video/viewanalytics";
+        const endpoint =
+          "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/video/viewanalytics";
 
         const response = await fetch(endpoint, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ uuid, token, url, category }),
         });
 
         const data = await response.json();
-        setAnalyticsData(data); // Set the response data to state
+        setAnalyticsData(data);
       } catch (error) {
         console.error("Error fetching analytics data:", error);
       } finally {
-        setLoading(false); // Set loading to false once data is fetched
+        setLoading(false);
       }
     };
 
     fetchAnalyticsData();
   }, [uuid, token, url, category]);
 
-  // Transform API data to the format for the graph
-  const transformAnalyticsData = () => {
-    if (!analyticsData) return [];
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player) return;
 
-    return analyticsData.videoAnalytics.map((item) => {
-      const [start, end] = item.durationRange.split(" to ").map(Number);
-      return {
-        durationRange: item.durationRange, // Keep the exact duration range as a label
-        duration: (start + end) / 2, // Use the midpoint of the range for the x-axis
-        views: item.views,
-      };
-    }).sort((a, b) => a.views - b.views); // Sort by views (least to most)
+    const handleStateChange = () => {
+      const playerState = player.getState().player;
+      setCurrentTime(playerState.currentTime);
+      if (playerState.duration && playerState.duration !== videoDuration) {
+        setVideoDuration(playerState.duration);
+      }
+    };
+
+    player.subscribeToStateChange(handleStateChange);
+
+    return () => {
+      // Cleanup if needed
+    };
+  }, [videoDuration]);
+
+  // Transform analytics data and ensure boundaries at 0 and videoDuration
+  const transformAnalyticsData = () => {
+    let expandedData = [];
+    if (analyticsData && analyticsData.videoAnalytics) {
+      analyticsData.videoAnalytics.forEach((item) => {
+        const [start, end] = item.durationRange.split(" to ").map(Number);
+        const watched = item.watched != null ? item.watched : null;
+        expandedData.push({ time: start, views: item.views, watched });
+        expandedData.push({ time: end, views: item.views, watched });
+      });
+      expandedData.sort((a, b) => a.time - b.time);
+    }
+    // Ensure chart covers full video duration
+    if (videoDuration > 0) {
+      if (expandedData.length === 0 || expandedData[0].time > 0) {
+        expandedData.unshift({ time: 0, views: 0, watched: 0 });
+      }
+      if (
+        expandedData.length === 0 ||
+        expandedData[expandedData.length - 1].time < videoDuration
+      ) {
+        expandedData.push({ time: videoDuration, views: 0, watched: 0 });
+      }
+    }
+    return expandedData;
   };
 
-  // If still loading, show a loader
+  const { chartData, totalDuration } = React.useMemo(() => {
+    const data = transformAnalyticsData();
+    // Use the video duration as the upper bound (or fallback to max data point)
+    const maxTime =
+      videoDuration || (data.length > 0 ? Math.max(...data.map((d) => d.time)) : 0);
+    return {
+      chartData: data,
+      totalDuration: maxTime,
+    };
+  }, [analyticsData, videoDuration]);
+
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div style={{ textAlign: "center", marginTop: "20px" }}>
+        Loading...
+      </div>
+    );
   }
 
-  const viewershipData = transformAnalyticsData();
-
   return (
-    <div style={{ position: "relative", width: "100%", maxWidth: "900px", margin: "auto", maxHeight: '1000px' }}>
-      <div style={{ position: "relative" }}>
-        {/* Video Player with built-in ControlBar */}
+    <div
+      style={{
+        fontFamily: "Arial, sans-serif",
+        margin: "0 auto",
+        width: "100%",
+        maxWidth: "900px",
+      }}
+    >
+      <h2>Video Analytics</h2>
+
+      <div
+        style={{ position: "relative", background: "#000" }}
+        onMouseEnter={() => setShowAnalytics(true)}
+        onMouseLeave={() => setShowAnalytics(false)}
+      >
         <Player
           ref={playerRef}
-          onLoadedMetadata={() => {
-            const duration = playerRef.current.getState().player.duration;
-            console.log(`Total video duration: ${duration} seconds`);
-          }}
-          src={analyticsData.Videosourceurl || "https://media.w3.org/2010/05/sintel/trailer_hd.mp4"} // Dynamically set the video URL
-          playbackRate={playbackRate}
-          style={{ width: '100%', height: '700px' }} // Set height to 700px for the player
+          src={
+            analyticsData?.Videosourceurl ||
+            "https://media.w3.org/2010/05/sintel/trailer_hd.mp4"
+          }
+          style={{ width: "100%", maxHeight: "600px" }}
         >
           <BigPlayButton position="center" />
-          {/* Built-in controls with additional tool buttons */}
           <ControlBar autoHide={false}>
             <ReplayControl seconds={10} order={1.1} />
             <ForwardControl seconds={10} order={1.2} />
@@ -100,60 +197,87 @@ const VideoWithAdvancedFeatures = () => {
             <TimeDivider order={4.2} />
             <DurationDisplay order={4.3} />
             <PlaybackRateMenuButton rates={[0.5, 1, 1.5, 2]} order={7.1} />
+            <ProgressControl />
           </ControlBar>
         </Player>
 
-        {/* Overlay: Dynamic viewership graph */}
-        <div
-          style={{
-            position: "absolute",
-            left: "0",
-            width: "100%",
-            height: "150px", // Increased height to ensure the graph has space
-            background: "rgba(0, 0, 0, 0.6)",
-            padding: "5px",
-            borderRadius: "10px"
-          }}
-        >
-          {/* Graph area */}
-          <div style={{ height: "70%", width: "100%" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={viewershipData}>
-                <XAxis dataKey="duration" tick={{ fill: "white", fontSize: 12 }} />
-                <YAxis hide />
-                <Tooltip contentStyle={{ backgroundColor: "#333", border: "none" }} />
-                {/* Line chart with dynamic data */}
-                <Line
-                  type="monotone" // Smooth curve type (you can change it to "step" for a zigzag)
-                  dataKey="views"
-                  stroke="gray"
-                  strokeWidth={2}
-                  dot={{ fill: "white", r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Label area: Display the range dynamically */}
+        {showAnalytics && (
           <div
             style={{
-              height: "30%",
-              display: "flex",
-              justifyContent: "space-around",
-              alignItems: "center",
-              paddingTop: "2px"
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: "10px",
+              top: "10px",
+              height: "250px",
+              background: "rgba(0, 0, 0, 0.6)",
+              padding: "10px",
+              boxSizing: "border-box",
+              backdropFilter: "blur(4px)",
+              borderRadius: "4px",
             }}
           >
-            {viewershipData.map((data, idx) => (
-              <span key={idx} style={{ color: "white", fontSize: "12px" }}>
-                {data.durationRange}, {data.views} views
-              </span>
-            ))}
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartData}
+                margin={{ top: 20, right: 20, left: 20, bottom: 10 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#999"
+                  opacity={0.2}
+                  vertical={false}
+                />
+
+                <defs>
+                  <linearGradient id="vimeoGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#7C5832" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#ffffff" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+
+                <XAxis
+                  dataKey="time"
+                  type="number"
+                  domain={[0, totalDuration]}
+                  tickFormatter={(tick) => formatSeconds(tick)}
+                  tick={{ fill: "#fff", fontSize: 12 }}
+                  axisLine={{ stroke: "#999" }}
+                  tickLine={false}
+                />
+                <YAxis
+                  hide
+                  // Extra space at the top so peaks stand out
+                  domain={["dataMin - 5", "dataMax + 20"]}
+                />
+
+                <ReferenceLine
+                  x={currentTime}
+                  stroke="#fff"
+                  strokeWidth={2}
+                  strokeDasharray="3 3"
+                />
+
+                <Tooltip content={<CustomTooltip />} />
+
+                <Area
+                  type="natural" // More curved than monotoneX
+                  dataKey="views"
+                  stroke="#7C5832"
+                  strokeWidth={2}
+                  fill="url(#vimeoGradient)"
+                  animationDuration={1500}
+                  animationEasing="ease-in-out"
+                  dot={{ r: 3, strokeWidth: 1, stroke: "#7C5832", fill: "#fff" }}
+                  activeDot={{ r: 5, stroke: "#7C5832", strokeWidth: 2, fill: "#fff" }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default VideoWithAdvancedFeatures;
+export default VimeoLikeRetention;

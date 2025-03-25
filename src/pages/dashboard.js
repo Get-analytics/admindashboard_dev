@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import "./dashboard.css";
 import Notch from "./components/notch";
 import Metrics from "./components/Metrics";
@@ -8,18 +10,70 @@ import TrafficSource from "./components/map";
 import Timespend from "./components/InnerComponents/Timespend";
 import Session from "./components/InnerComponents/session";
 import Device from "./components/InnerComponents/device";
-import { useRecordContext } from "../context/RecordContext"; // Import context
+import { useRecordContext } from "../context/RecordContext";
 import VideoWithAdvancedFeatures from "./components/Videoview";
 
-
 const Dashboard = () => {
-  const { record } = useRecordContext();
-  const { category } = record || {}; // Get category from record
-
+  const { category, analyticsId } = useParams();
+  const navigate = useNavigate();
+  const { record, saveRecord } = useRecordContext();
   const [activeMatrix, setActiveMatrix] = useState("default");
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
-  // Dynamically select component based on category
+  useEffect(() => {
+    const auth = getAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log(user, "userssssss");
+
+      if (!user) {
+        navigate("/login");
+      } else {
+        setUser(user); // Store user data in state
+        console.log("user.........");
+        console.log(user.email);
+        console.log(user.displayName);
+        console.log(user.photoURL);
+
+        // Check and save record only if it doesn't exist
+        if (!record && category && analyticsId) {
+          const newRecord = {
+            category: category.toLowerCase(),
+            uuid: analyticsId,
+            url: window.location.pathname,
+            userInfo: {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+            },
+          };
+          console.log(newRecord, "new record");
+          saveRecord(newRecord);
+        }
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [category, analyticsId, record, saveRecord, navigate]);
+
+  useEffect(() => {
+    if (record) {
+      console.log(record, "final record");
+    }
+  }, [record]);
+
+  if (loading) {
+    return <div className="loading-screen">Loading...</div>;
+  }
+
   const renderMainContent = () => {
+    if (!record) {
+      return <div className="error-message">No valid record found</div>;
+    }
+
     if (activeMatrix === "Total Sessions") {
       return (
         <div className="main-content">
@@ -43,19 +97,17 @@ const Dashboard = () => {
         </div>
       );
     } else {
-      // Dynamically render components based on category
       return (
         <div className="main-content">
           <div className="heatmap-section">
-            {/* Render different components based on category */}
-            {category?.toLowerCase() === "web" ? (
-              <HeatmapCard /> // For web category, render HeatmapCard
-            ) : category?.toLowerCase() === "pdf" || category?.toLowerCase() === "docx" ? (
-              <Mostviewedpage /> // For pdf or docx category, render Mostviewedpage
-            ) : category?.toLowerCase() === "video" ? (
-              <VideoWithAdvancedFeatures /> // For video category, render VideoWithAdvancedFeatures
+            {record.category === "web" ? (
+              <HeatmapCard />
+            ) : record.category === "pdf" || record.category === "docx" ? (
+              <Mostviewedpage />
+            ) : record.category === "video" ? (
+              <VideoWithAdvancedFeatures />
             ) : (
-              <div>No valid category found</div> // Fallback if no valid category
+              <div>No valid category found</div>
             )}
           </div>
           <div className="right-section">
@@ -65,11 +117,11 @@ const Dashboard = () => {
       );
     }
   };
-  
 
   return (
     <div className="dashboard-container">
-      <Notch />
+      {/* ✅ Pass record as a prop to Notch */}
+      <Notch record={record} />
       <div className="top-metrics">
         <Metrics setActiveMatrix={setActiveMatrix} activeMatrix={activeMatrix} />
       </div>

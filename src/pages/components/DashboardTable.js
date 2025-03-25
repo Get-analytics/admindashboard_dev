@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { Table, Tooltip, Modal, Button, ConfigProvider } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
+import React, { useState, useEffect } from "react";
+import { Table, Tooltip, Modal, Button, ConfigProvider, Spin } from "antd";
+import { DeleteOutlined, LoadingOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useRecordContext } from "../../context/RecordContext"; // Import the context
+import { useRecordContext } from "../../context/RecordContext";
 import { createStyles, useTheme } from "antd-style";
+import { toast } from "react-toastify";
 
 const useStyle = createStyles(({ token }) => ({
   "my-modal-body": {
@@ -34,15 +35,15 @@ const DashboardTable = ({
   handleCopyUrl,
 }) => {
   const navigate = useNavigate();
-  const tokenStr = localStorage.getItem("AuthToken");
-  
-  // Use the context to get and set the record data
-  const { saveRecord } = useRecordContext();
-  console.log(saveRecord, "saved data")
+  const tokenStr = localStorage.getItem("UUID");
 
-  // State for controlling the modal and storing the selected record.
+  const { saveRecord } = useRecordContext();
+  console.log("saveRecord from context:", saveRecord);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
 
   const { styles } = useStyle();
   const theme = useTheme();
@@ -77,6 +78,12 @@ const DashboardTable = ({
     },
   };
 
+  // Log the raw data prop for debugging purposes
+  useEffect(() => {
+    console.log("Raw data prop received in DashboardTable:", data);
+    setTableLoading(false);
+  }, [data]);
+
   const showModal = (record) => {
     setSelectedRecord(record);
     setIsModalOpen(true);
@@ -86,16 +93,30 @@ const DashboardTable = ({
     const parts = url.split("/");
     const id = parts[parts.length - 1];
 
+    setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/v1/removesession", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shortId: id, mimeType }),
-      });
+      const response = await fetch(
+        "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/removesession",
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ shortId: id, mimeType }),
+        }
+      );
       const result = await response.json();
       console.log("Delete result:", result);
+
+      if (result.message === "Record deleted successfully.") {
+        toast.success("Record deleted successfully!");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
     } catch (error) {
       console.error("Error deleting record:", error);
+      toast.error("Error deleting record.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,25 +133,63 @@ const DashboardTable = ({
     setSelectedRecord(null);
   };
 
+  // Helper: Convert timeAgo string to a Date object
+  const parseTimeAgoToDate = (timeAgo) => {
+    const now = new Date();
+    const regex = /(\d+)\s*(minute|hour|day)s?\s*ago/;
+    const match = timeAgo.match(regex);
+    if (match) {
+      const value = parseInt(match[1]);
+      const unit = match[2];
+      if (unit === "minute") {
+        now.setMinutes(now.getMinutes() - value);
+      } else if (unit === "hour") {
+        now.setHours(now.getHours() - value);
+      } else if (unit === "day") {
+        now.setDate(now.getDate() - value);
+      }
+    }
+    return now;
+  };
+
+  // Map the data without altering the fileName property
+  const sortedData = Object.values(data)
+    .flat()
+    .map((record) => {
+      console.log("Mapped record:", record); // Check if fileName exists here
+      return {
+        ...record,
+        parsedTimeAgo: parseTimeAgoToDate(record.timeAgo),
+      };
+    })
+    .sort((a, b) => b.parsedTimeAgo - a.parsedTimeAgo);
+
   const columns = [
     {
       title: "Id",
       dataIndex: "key",
       key: "key",
-      render: (text, record, index) => (currentPage - 1) * pageSize + index + 1,
+      render: (text, record, index) =>
+        (currentPage - 1) * pageSize + index + 1,
     },
     {
       title: "URLs",
       dataIndex: "url",
       key: "url",
       ...getColumnSearchProps("url"),
-      render: (text) => {
-        const truncated = text.length > 25 ? text.substring(0, 25) + "..." : text;
+      render: (text, record) => {
+        console.log("Record in table column:", record);
+        const truncated =
+          text.length > 25 ? text.substring(0, 25) + "..." : text;
         return (
           <Tooltip title="Click to copy full URL" placement="top">
-            <span onClick={() => handleCopyUrl(text)} style={{ cursor: "pointer" }}>
-              {truncated}
-            </span>
+            <div onClick={() => handleCopyUrl(text)} style={{ cursor: "pointer" }}>
+              <span>{truncated}</span>
+              <br />
+              <span style={{ fontSize: "12px", color: "#888" }}>
+                {record.fileName || "No file name available"}
+              </span>
+            </div>
           </Tooltip>
         );
       },
@@ -155,37 +214,97 @@ const DashboardTable = ({
       key: "analytics",
       align: "center",
       render: (text, record) => (
-        <Button
-          style={{
-            backgroundColor: "#7C5832",
-            borderRadius: "15px",
-            height: "25px",
-            cursor: "pointer",
-            border: "none",
-            color: "#fff",
-            padding: "0 10px",
-          }}
-          onClick={() => {
-            // Save the record data to context when navigating
-            saveRecord({
-              uuid: record.key,
-              token: tokenStr,
-              url: record.url,
-              category: record.category,
-            });
+<Button
+  style={{
+    backgroundColor: "#7C5832",
+    borderRadius: "20px",
+    height: "30px",
+    cursor: "pointer",
+    border: "none",
+    color: "#fff",
+    padding: "0 12px",
+    fontFamily: "'DM Sans', sans-serif",
+    fontWeight: "300",
+  }}
+  onClick={() => {
+    try {
+      console.log("👉 Button clicked: View Analytics");
+  
+      // Check if the URL is valid before splitting
+      if (!record.url || typeof record.url !== "string") {
+        console.error("❌ Error: Invalid URL in record:", record.url);
+        alert("Invalid URL. Please check the record.");
+        return;
+      }
+  
+      console.log(`✅ URL Found: ${record.url}`);
+  
+      // Split the URL to extract the analyticsId
+      const urlParts = record.url.split("https://view.sendnow.live/");
+      let analyticsId = urlParts[1];
+  
+      // Log split URL info
+      console.log("🔎 URL Parts:", urlParts);
+      console.log(`📊 Extracted Analytics ID: ${analyticsId || "N/A"}`);
+  
+      // Remove leading slash if present
+      if (analyticsId && analyticsId.startsWith("/")) {
+        analyticsId = analyticsId.replace(/^\//, ""); // Remove leading slash
+        console.log(`✅ Cleaned Analytics ID: ${analyticsId}`);
+      }
+  
+      // Check if analyticsId is valid
+      if (analyticsId) {
+        console.log("✅ Valid Analytics ID. Proceeding to save and navigate...");
+  
+        // Log record info before saving
+        console.log("📚 Record Info:", {
+          uuid: record.key,
+          token: tokenStr,
+          url: record.url,
+          category: record.category,
+        });
+  
+        // Save record
+        saveRecord({
+          uuid: record.key,
+          url: record.url,
+          category: record.category,
+          userInfo: {
+            uid: tokenStr,
+           
+          },
 
-            navigate("/dashboard", {
-              state: {
-                uuid: record.key,
-                token: tokenStr,
-                url: record.url,
-                category: record.category,
-              },
-            });
-          }}
-        >
-          View Analytics
-        </Button>
+        });
+
+        console.log(record.key,tokenStr,record.url,record.category)
+  
+        console.log("✅ Record saved successfully!");
+  
+        // Log navigation info
+        console.log(`🚀 Navigating to /dashboard/${record.category}/${analyticsId}`);
+        navigate(`/dashboard/${record.category}/${analyticsId}`, {
+          state: {
+            uuid: record.key,
+            token: tokenStr,
+            url: record.url,
+            category: record.category,
+          },
+        });
+      } else {
+        console.error("❌ Error: Invalid URL format. No analytics ID found.");
+        alert("Invalid URL format. Unable to extract analytics ID.");
+      }
+    } catch (error) {
+      console.error("❌ Unexpected error occurred:", error);
+      alert(`An error occurred: ${error.message}`);
+    }
+  }}
+  
+>
+  View Analytics
+</Button>
+
       ),
     },
     {
@@ -194,7 +313,11 @@ const DashboardTable = ({
       align: "center",
       render: (_, record) => (
         <DeleteOutlined
-          style={{ fontSize: "24px", color: "red", cursor: "pointer" }}
+          style={{
+            fontSize: "20px",
+            color: "#464646",
+            cursor: "pointer",
+          }}
           onClick={() => showModal(record)}
         />
       ),
@@ -203,16 +326,30 @@ const DashboardTable = ({
 
   return (
     <>
-      <Table
-        dataSource={data}
-        columns={columns}
-        pagination={{
-          current: currentPage,
-          pageSize: pageSize,
-          total: data.length,
-          onChange: (page) => setCurrentPage(page),
-        }}
-      />
+      {tableLoading ? (
+        <div style={{ textAlign: "center", marginTop: "20px" }}>
+          <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+        </div>
+      ) : sortedData.length > 0 ? (
+        <Table
+          style={{ width: "56rem" }}
+          dataSource={sortedData}
+          columns={columns}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: sortedData.length,
+            onChange: (page) => setCurrentPage(page),
+          }}
+        />
+      ) : (
+        <div style={{ textAlign: "center", marginTop: "20px" }}></div>
+      )}
+      {loading && (
+        <div style={{ textAlign: "center", marginTop: "20px" }}>
+          <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+        </div>
+      )}
       <ConfigProvider modal={{ classNames, styles: modalStyles }}>
         <Modal
           title="Confirm Delete"

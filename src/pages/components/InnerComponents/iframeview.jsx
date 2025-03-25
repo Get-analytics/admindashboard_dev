@@ -89,7 +89,7 @@ const IframeView = () => {
   };
 
   const handleClose = () => {
-    navigate("/dashboard"); // Navigate to the dashboard when the close icon is clicked
+    navigate("/linkpage"); // Navigate to the dashboard when the close icon is clicked
   };
 
   return (
