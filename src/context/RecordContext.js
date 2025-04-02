@@ -9,20 +9,27 @@ export const useRecordContext = () => {
 
 export const RecordProvider = ({ children }) => {
   const [record, setRecord] = useState(null);
+  const [closeDateFilter, setCloseDateFilter] = useState(false); // New state
 
   const saveRecord = (newRecord) => {
     setRecord(newRecord);
   };
 
-  // Log the record whenever it changes
   useEffect(() => {
     if (record) {
       console.log("Updated record:", record);
     }
-  }, [record]); // Dependency array, so it runs when 'record' changes
+  }, [record]);
 
   return (
-    <RecordContext.Provider value={{ record, saveRecord }}>
+    <RecordContext.Provider
+      value={{
+        record,
+        saveRecord,
+        closeDateFilter,
+        setCloseDateFilter,
+      }}
+    >
       {children}
     </RecordContext.Provider>
   );
