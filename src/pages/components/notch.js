@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState , useEffect} from "react";
 import { motion } from "framer-motion";
 import { Upload, Link, Filter, Settings, User, LogOut } from "lucide-react";
 import { Modal, Card, Input, Progress } from "antd";
@@ -9,6 +9,8 @@ import { CopyOutlined, LinkOutlined } from "@ant-design/icons";
 import "./notch.css";
 import axios from "axios";  // Ensure axios is imported
 import { toast } from "react-toastify"; // For notifications
+import DateRangePicker from "./InnerComponents/Filter"; // DateRangePicker component
+import { useRecordContext } from "../../context/RecordContext";
 
 export default function Notch() {
   const auth = getAuth();
@@ -21,10 +23,21 @@ export default function Notch() {
   const [file, setFile] = useState(null);
   const [generatedLink, setGeneratedLink] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [showDateFilter, setShowDateFilter] = useState(false); // Track if DateRangePicker should be shown
   const fileInputRef = React.useRef();
+  const { closeDateFilter, setCloseDateFilter } = useRecordContext(); // Access context
+
+  useEffect(() => {
+    if (closeDateFilter) {
+      setShowDateFilter(false); // Hide the date picker modal
+      setCloseDateFilter(false); // Reset to false to allow re-triggering
+    }
+  }, [closeDateFilter, setCloseDateFilter]);
+  
 
   // Assuming 'user' object is available from your authentication state
   const user = auth.currentUser;
+  console.log(user.photoURL, "userssssssssss")
   const userInfo = { uuid: user?.uid }; // Mock user info for this example
 
   // Show confirmation modal for logout
@@ -86,6 +99,19 @@ export default function Notch() {
   const handleDragEnter = (e) => {
     e.preventDefault();
     setIsDragging(true); // Optionally update UI to show a dragging state
+  };
+
+  const handleFileAreaClick = () => {
+    if (!file) {
+      handleFileUploadClick();
+    }
+  };
+
+  const handleFileUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
   };
 
   // Handle drag over for file upload area
@@ -180,6 +206,7 @@ export default function Notch() {
   };
 
   return (
+    <>
     <motion.div
       initial={{ scaleX: 0.6, scaleY: 0.6, opacity: 0, borderRadius: "50px" }}
       animate={{ scaleX: 1, scaleY: 1, opacity: 1, borderRadius: "164px" }}
@@ -194,7 +221,7 @@ export default function Notch() {
         transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
         onClick={showProfileModal} // Open profile modal on click
       >
-        <img 
+        <img
           src={user?.photoURL || "default-avatar.png"} // Show profile picture or default image
           alt="User Avatar"
           className="avatar"
@@ -211,7 +238,7 @@ export default function Notch() {
             transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 + index * 0.1 }}
             whileHover={{ scale: 1.1 }}
             className="icon-wrapper"
-            onClick={Icon === Upload ? showUploadModal : null} // Open upload modal when upload icon is clicked
+            onClick={Icon === Filter ? () => setShowDateFilter((prev) => !prev) : Icon === Upload ? showUploadModal : null}
           >
             <Icon size={22} strokeWidth={2} className="notch-icon" />
           </motion.div>
@@ -230,6 +257,7 @@ export default function Notch() {
         </motion.div>
       </div>
 
+
       {/* Profile Modal */}
       <Modal
         title="Profile"
@@ -239,9 +267,9 @@ export default function Notch() {
         width={300}
       >
         <Card bordered={false} style={{ textAlign: "center" }}>
-          <img 
-            src={user?.photoURL || "default-avatar.png"} 
-            alt="User Avatar" 
+          <img
+            src={user?.photoURL || "default-avatar.png"}
+            alt="User Avatar"
             style={{ width: "80px", borderRadius: "50%" }}
           />
           <h3>{user?.displayName || "No Display Name"}</h3>
@@ -295,49 +323,68 @@ export default function Notch() {
             <div className="linkpage-divider"></div>
 
             {/* Right Card: File Upload with drag & drop */}
-            <div
-              className="linkpage-card"
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <h2 className="linkpage-card-title">Drop Your Content</h2>
-              <div
-                className={`linkpage-input linkpage-file-upload ${isDragging ? "dragging" : ""}`}
-                onClick={() => fileInputRef.current.click()}
-              >
-                <span>{file ? file.name : "Upload Your Files"}</span>
-                {file ? (
-                  <LinkOutlined className="linkpage-icon-button" />
-                ) : (
-                  <div className="linkpage-icon-wrapper">
-                    <img
-                      src="/upload copy.svg"
-                      alt="Upload Icon"
-                      className="linkpage-dropdown-icon"
+                  <div
+                    className="linkpage-card"
+                    onDragOver={handleDragOver}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <h2 className="linkpage-card-title">Drop Your Content</h2>
+                    <div
+                      className={`linkpage-input linkpage-file-upload ${isDragging ? "dragging" : ""}`}
+                      onClick={handleFileAreaClick}
+                    >
+                      <span>{file ? file.name : "Upload Your Files"}</span>
+                      {file ? (
+                        <LinkOutlined className="linkpage-icon-button" />
+                      ) : (
+                        <div className="linkpage-icon-wrapper">
+                          <img
+                            src="/upload copy.svg"
+                            alt="Upload Icon"
+                            className="linkpage-dropdown-icon"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="linkpage-file-input"
+                      onChange={handleFileChange}
+                      style={{ display: "none" }}
+                      accept=".jpg,.png,.pdf,.docx,.mp4"
                     />
+                    <p className="linkpage-note">
+                      Note:<br />
+                      Upload PDFs, Docs, Images, or videos.<br />
+                      Maximum file size varies by plan—upgrade anytime for<br />
+                      higher limits and advanced analytics.
+                    </p>
                   </div>
-                )}
-              </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="linkpage-file-input"
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-                accept=".jpg,.png,.pdf,.docx,.mp4"
+          </div> 
+
+          {/* Display Generated Link */}
+          {generatedLink && (
+            <div className="generated-link-container">
+              <h3>Your Generated Link:</h3>
+              <Input
+                readOnly
+                value={generatedLink}
+                addonAfter={<CopyOutlined onClick={() => navigator.clipboard.writeText(generatedLink)} />}
               />
               <p className="linkpage-note">
-                Note:<br />
-                Upload PDFs, Docs, Images, or videos.<br />
-                Maximum file size varies by plan—upgrade anytime for<br />
-                higher limits and advanced analytics.
+                Copy the link and share it with your audience to track the file access.
               </p>
             </div>
-          </div>
+          )}
         </div>
       </Modal>
     </motion.div>
+    
+      {/* Show Date Filter Calendar if `showDateFilter` is true */}
+      {showDateFilter && <DateRangePicker />}
+    </>
   );
 }
