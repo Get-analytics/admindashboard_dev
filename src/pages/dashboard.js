@@ -24,17 +24,22 @@ const Dashboard = () => {
   useEffect(() => {
     const auth = getAuth();
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log(user, "userssssss");
 
       if (!user) {
         navigate("/login");
       } else {
         setUser(user); // Store user data in state
-        console.log("user.........");
-        console.log(user.email);
-        console.log(user.displayName);
-        console.log(user.photoURL);
+        console.log("User data:", {
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        });
+
+        // Get a fresh token from Firebase instead of localStorage
+        const token = await user.accessToken
+        console.log("Fetched token:", token);
 
         // Check and save record only if it doesn't exist
         if (!record && category && analyticsId) {
@@ -47,6 +52,7 @@ const Dashboard = () => {
               email: user.email,
               displayName: user.displayName,
               photoURL: user.photoURL,
+              token, // using the freshly fetched token
             },
           };
           console.log(newRecord, "new record");
