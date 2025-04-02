@@ -27,6 +27,9 @@ export default function TrafficSource() {
   const { record } = useRecordContext();
   const { uuid, token, url, category } = record || {};
 
+  // Country name cache to prevent multiple requests
+  const [countryNameCache, setCountryNameCache] = useState({});
+
   // Fetch session data from your backend
   useEffect(() => {
     if (uuid && url && category) {
@@ -83,14 +86,35 @@ export default function TrafficSource() {
   }, [uuid, token, url, category]);
 
   useEffect(() => {
-    // Function to fetch country center from the REST Countries API by alpha code
+    // Fetch country name by alpha code
+    async function fetchCountryName(countryCode) {
+      if (countryNameCache[countryCode]) {
+        return countryNameCache[countryCode];
+      }
+
+      try {
+        const response = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode.toLowerCase()}`);
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].name) {
+          const countryName = data[0].name.common;
+          setCountryNameCache((prevCache) => ({
+            ...prevCache,
+            [countryCode]: countryName,
+          }));
+          return countryName;
+        }
+      } catch (error) {
+        console.error("Error fetching country name for", countryCode, error);
+      }
+      return countryCode;
+    }
+
+    // Fetch country center from REST Countries API by alpha code
     async function fetchCountryCenter(countryCode) {
       try {
-        // REST Countries expects lower-case country codes
         const response = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode.toLowerCase()}`);
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0 && data[0].latlng) {
-          // REST Countries returns [lat, lng] so we swap to [lng, lat]
           const [lat, lng] = data[0].latlng;
           return [lng, lat];
         }
@@ -104,18 +128,16 @@ export default function TrafficSource() {
       const newMarkers = await Promise.all(
         sessionData.map(async (item) => {
           const countryCode = item.country;
-          // Fetch the dynamic center coordinate based on the country code
           const dynamicCoords = await fetchCountryCenter(countryCode);
-          let coords = dynamicCoords;
-          if (!coords) {
-            // Fallback: use backend coordinates (swap them assuming they are [lat, lng])
-            coords = item.coordinates && item.coordinates.length === 2 ? [item.coordinates[1], item.coordinates[0]] : [0, 0];
-          }
+          let coords = dynamicCoords || [0, 0];
+          const countryName = await fetchCountryName(countryCode);
+
           return {
-            name: countryCode,
+            name: countryName,
             coordinates: coords,
             districts: item.districts ? item.districts.split(", ") : [],
             states: item.states ? item.states.split(", ") : [],
+            countryCode, // Keep countryCode for reference
           };
         })
       );
@@ -125,9 +147,14 @@ export default function TrafficSource() {
     if (sessionData.length > 0) {
       processMarkers();
     }
-  }, [sessionData]);
+  }, [sessionData, countryNameCache]);
 
   const columns = [
+    {
+      title: "Country",
+      dataIndex: "country",
+      key: "country",
+    },
     {
       title: "State",
       dataIndex: "state",
@@ -143,6 +170,7 @@ export default function TrafficSource() {
   const dataSource = selectedMarker
     ? selectedMarker.states.map((state, index) => ({
         key: index,
+        country: selectedMarker.name || "Unknown",
         state,
         district: selectedMarker.districts[index] || "No District Data",
       }))
@@ -266,7 +294,7 @@ export default function TrafficSource() {
 
       {selectedMarker && (
         <Modal
-          title={selectedMarker.name}
+         
           visible={true}
           onCancel={() => setSelectedMarker(null)}
           footer={null}
