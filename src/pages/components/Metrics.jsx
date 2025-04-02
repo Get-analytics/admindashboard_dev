@@ -1,5 +1,7 @@
+
+
 import React, { useEffect, useState } from "react";
-import "./Metrics.css";
+import "./Metrics.css"; // Import CSS styles for Metrics
 import { Link } from "react-router-dom";
 import { useRecordContext } from "../../context/RecordContext";
 import { useSpring, animated } from "@react-spring/web";
@@ -11,6 +13,9 @@ import {
   RightOutlined,
 } from "@ant-design/icons";
 
+// ----------------------------------------------------
+// Metrics Configuration: defines the four metric cards.
+// ----------------------------------------------------
 const metrics = [
   {
     title: "Total Sessions",
@@ -38,32 +43,38 @@ const metrics = [
   },
 ];
 
+// ----------------------------------------------------
+// Default metric values to be used in case of API error.
+// ----------------------------------------------------
+const defaultMetrics = {
+  totalsession: 0,
+  totalTimeSpent: 0,
+  bounceRate: 0,
+  uniqueVisitors: 0,
+  returnedVisitors: 0,
+};
+
+// ----------------------------------------------------
+// Metrics Component
+// ----------------------------------------------------
 export default function Metrics({ setActiveMatrix, activeMatrix }) {
+  // Retrieve record context, which includes API parameters.
   const { record } = useRecordContext();
   console.log("Record context:", record);
 
-  // Destructure values from record.
-  // Your record format is:
-  // {
-  //   uuid: "video-4-https://view.sendnow.live/mJoBU",
-  //   url: "/dashboard/video/mJoBU",
-  //   category: "video",
-  //   userInfo: {
-  //     uid: "XWLEbJxLH6dlXvASX4LtVXZjH0n1",
-  //     usertoken: "eyJh...lyg"
-  //   }
-  // }
-  // Use userInfo.uid as the uuid for API calls.
+
   const { url, category, userInfo } = record || {};
   const uuid = userInfo ? userInfo.uid : "";
   const token = userInfo ? userInfo.usertoken : "";
   console.log("Derived values:", { uuid, token, url, category });
 
+  // State to store API data and control loading/error states.
   const [apiData, setApiData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dataReceived, setDataReceived] = useState(false);
 
+  // State for animated values to drive animations.
   const [animatedValues, setAnimatedValues] = useState({
     totalSessions: 0,
     uniqueVisitors: 0,
@@ -72,7 +83,9 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     totalTimeSpent: 0,
   });
 
-  // Fetch analytics data from backend.
+  // ----------------------------------------------------
+  // Fetch analytics data from the backend.
+  // ----------------------------------------------------
   useEffect(() => {
     if (uuid && url && category) {
       const fetchAnalyticsData = async () => {
@@ -92,7 +105,7 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
           const apiUrl = apiEndpoints[updatedCategory];
           if (!apiUrl) throw new Error("Invalid category");
 
-          // Build request body using the overridden uuid and token.
+          // Build request body using the provided uuid and token.
           const requestBody = {
             uuid,
             url,
@@ -102,14 +115,15 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
 
           console.log("Sending analytics request:", requestBody);
 
+          // Make the API request.
           const response = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(requestBody),
           });
 
-          if (!response.ok)
-            throw new Error(`Error fetching analytics data: ${response.status}`);
+          // If the response is not OK, throw an error.
+          if (!response.ok) throw new Error(`Error fetching analytics data: ${response.status}`);
 
           const data = await response.json();
           console.log("Analytics data fetched:", data);
@@ -119,6 +133,7 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
           // Use lowercase category key for userCounts.
           const userCountsKey = updatedCategory.toLowerCase();
 
+          // Update animated values from the data, or use default values.
           setAnimatedValues({
             totalSessions: data.totalsession || 0,
             uniqueVisitors: data.userCounts?.newuser?.[userCountsKey] || 0,
@@ -127,8 +142,11 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
             totalTimeSpent: data.totalTimeSpent || 0,
           });
         } catch (error) {
-          console.error(error.message);
+          console.error("API Error:", error.message);
+          // In case of error, set API data and animated values to default.
           setError(error.message);
+          setApiData(defaultMetrics);
+          setAnimatedValues(defaultMetrics);
         } finally {
           setLoading(false);
         }
@@ -138,6 +156,9 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     }
   }, [uuid, token, url, category]);
 
+  // ----------------------------------------------------
+  // Helper function to format time (in seconds) into human-readable format.
+  // ----------------------------------------------------
   const formatTime = (totalSeconds) => {
     if (totalSeconds < 60) {
       return `${totalSeconds.toFixed(0)} sec`;
@@ -152,19 +173,15 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     }
   };
 
-  const defaultMetrics = {
-    totalsession: 0,
-    totalTimeSpent: 0,
-    bounceRate: 0,
-    uniqueVisitors: 0,
-    returnedVisitors: 0,
-  };
-
-  const { totalsession, totalTimeSpent, bounceRate, returnedVisitors } =
-    apiData || defaultMetrics;
+  // ----------------------------------------------------
+  // Extract metric values from API data or default metrics.
+  // ----------------------------------------------------
+  const { totalsession, totalTimeSpent, bounceRate, returnedVisitors } = apiData || defaultMetrics;
   const totalTimeSpentFormatted = formatTime(totalTimeSpent);
 
-  // For animations
+  // ----------------------------------------------------
+  // Setup react-spring for animated metric values.
+  // ----------------------------------------------------
   const [uniqueVisitorsClicked, setUniqueVisitorsClicked] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
   const springValues = useSpring({
@@ -191,13 +208,14 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     },
   });
 
+  // ----------------------------------------------------
+  // Build updated metrics array for rendering.
+  // ----------------------------------------------------
   const updatedMetrics = metrics.map((item) => {
     let updatedTitle = item.title;
-
     if (item.title === "Unique Visitors" && uniqueVisitorsClicked) {
       updatedTitle = "Returned Visitors";
     }
-
     switch (updatedTitle) {
       case "Total Sessions":
         return { ...item, value: totalsession.toString() };
@@ -217,80 +235,73 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     }
   });
 
+
   return (
     <div className="metrics-container">
+      <h2>Metrics</h2>
       {loading && <div>Loading...</div>}
-      {error && <div className="error">{error}</div>}
-      {apiData && (
-        <div className="metrics-grid">
-          {updatedMetrics.map((item, index) => (
-            <div
-              key={index}
-              className={`metric-card ${
-                activeMatrix === item.title ? "active" : ""
-              }`}
-              onClick={() => {
-                if (item.title === "Unique Visitors") {
-                  setUniqueVisitorsClicked(!uniqueVisitorsClicked);
-                }
-                item.showLink && setActiveMatrix(item.title);
-              }}
-            >
-              <div className="metric-icon">{item.icon}</div>
-              <div className="metric-content">
-                <p className="metric-title">
-                  {item.title === "Unique Visitors" && uniqueVisitorsClicked
-                    ? "Returned Visitors"
-                    : item.title}
-                </p>
-                <h2 className="metric-value">
-                  <animated.div>
-                    {item.title === "Total Sessions" && (
-                      <animated.span>
-                        {springValues.totalSessions.to((val) =>
-                          Math.floor(val)
-                        )}
-                      </animated.span>
-                    )}
-                    {item.title === "Unique Visitors" && (
-                      <animated.span>
-                        {springValues.uniqueVisitors.to((val) =>
-                          Math.floor(val)
-                        )}
-                      </animated.span>
-                    )}
-                    {item.title === "Bounce Rate" && (
-                      <animated.span>
-                        {springValues.bounceRate.to(
-                          (val) => `${val.toFixed(1)}%`
-                        )}
-                      </animated.span>
-                    )}
-                    {item.title === "Time Spent" && (
-                      <animated.span>
-                        {springValues.totalTimeSpent.to((val) =>
-                          formatTime(val)
-                        )}
-                      </animated.span>
-                    )}
-                  </animated.div>
-                </h2>
-              </div>
-              {(item.title === "Total Sessions" ||
-                item.title === "Time Spent") && (
-                <img src="/export.svg" alt="Export icon" className="export-icon" />
-              )}
-              {item.showLink &&
-                item.title !== "Total Sessions" &&
-                item.title !== "Time Spent" && (
-                  <Link to="/details" className="metric-link">
-                    <RightOutlined />
-                  </Link>
-                )}
+      {error && <div className="error">Data not available. Showing default values.</div>}
+      <div className="metrics-grid">
+        {updatedMetrics.map((item, index) => (
+          <div
+            key={index}
+            className={`metric-card ${activeMatrix === item.title ? "active" : ""}`}
+            onClick={() => {
+              if (item.title === "Unique Visitors") {
+                setUniqueVisitorsClicked(!uniqueVisitorsClicked);
+              }
+              if (item.showLink) {
+                setActiveMatrix(item.title);
+              }
+            }}
+          >
+            <div className="metric-icon">{item.icon}</div>
+            <div className="metric-content">
+              <p className="metric-title">
+                {item.title === "Unique Visitors" && uniqueVisitorsClicked
+                  ? "Returned Visitors"
+                  : item.title}
+              </p>
+              <h2 className="metric-value">
+                <animated.div>
+                  {item.title === "Total Sessions" && (
+                    <animated.span>
+                      {springValues.totalSessions.to((val) => Math.floor(val))}
+                    </animated.span>
+                  )}
+                  {item.title === "Unique Visitors" && (
+                    <animated.span>
+                      {springValues.uniqueVisitors.to((val) => Math.floor(val))}
+                    </animated.span>
+                  )}
+                  {item.title === "Bounce Rate" && (
+                    <animated.span>
+                      {springValues.bounceRate.to((val) => `${val.toFixed(1)}%`)}
+                    </animated.span>
+                  )}
+                  {item.title === "Time Spent" && (
+                    <animated.span>
+                      {springValues.totalTimeSpent.to((val) => formatTime(val))}
+                    </animated.span>
+                  )}
+                </animated.div>
+              </h2>
             </div>
-          ))}
-        </div>
-      )}
+            {(item.title === "Total Sessions" || item.title === "Time Spent") && (
+              <img src="/export.svg" alt="Export icon" className="export-icon" />
+            )}
+            {item.showLink &&
+              item.title !== "Total Sessions" &&
+              item.title !== "Time Spent" && (
+                <Link to="/details" className="metric-link">
+                  <RightOutlined />
+                </Link>
+              )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+
