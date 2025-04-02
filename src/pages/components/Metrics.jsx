@@ -40,10 +40,27 @@ const metrics = [
 
 export default function Metrics({ setActiveMatrix, activeMatrix }) {
   const { record } = useRecordContext();
-  const { uuid, token, url, category } = record || {};
+  console.log("Record context:", record);
+
+  // Destructure values from record.
+  // Your record format is:
+  // {
+  //   uuid: "video-4-https://view.sendnow.live/mJoBU",
+  //   url: "/dashboard/video/mJoBU",
+  //   category: "video",
+  //   userInfo: {
+  //     uid: "XWLEbJxLH6dlXvASX4LtVXZjH0n1",
+  //     usertoken: "eyJh...lyg"
+  //   }
+  // }
+  // Use userInfo.uid as the uuid for API calls.
+  const { url, category, userInfo } = record || {};
+  const uuid = userInfo ? userInfo.uid : "";
+  const token = userInfo ? userInfo.usertoken : "";
+  console.log("Derived values:", { uuid, token, url, category });
 
   const [apiData, setApiData] = useState(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dataReceived, setDataReceived] = useState(false);
 
@@ -55,9 +72,7 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     totalTimeSpent: 0,
   });
 
-  const [animationComplete, setAnimationComplete] = useState(false);
-  const [uniqueVisitorsClicked, setUniqueVisitorsClicked] = useState(false);
-
+  // Fetch analytics data from backend.
   useEffect(() => {
     if (uuid && url && category) {
       const fetchAnalyticsData = async () => {
@@ -65,23 +80,27 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
           setLoading(true);
           setError(null);
 
+          // Convert category if needed.
           const updatedCategory = category === "Web" ? "weblink" : category;
           const apiEndpoints = {
             pdf: "https://admin-dashboard-backend-rust.vercel.app/api/v1/pdf/analytics",
             weblink: "https://admin-dashboard-backend-rust.vercel.app/api/v1/web/analytics",
-            video: "https://admin-dashboard-backend-rust.vercel.app/api/v1/video/analytics",
+            video: "http://localhost:5000/api/v1/video/analytics",
             docx: "https://admin-dashboard-backend-rust.vercel.app/api/v1/docx/analytics",
           };
 
           const apiUrl = apiEndpoints[updatedCategory];
           if (!apiUrl) throw new Error("Invalid category");
 
+          // Build request body using the overridden uuid and token.
           const requestBody = {
             uuid,
             url,
             category: updatedCategory,
             ...(token && { token }),
           };
+
+          console.log("Sending analytics request:", requestBody);
 
           const response = await fetch(apiUrl, {
             method: "POST",
@@ -93,9 +112,11 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
             throw new Error(`Error fetching analytics data: ${response.status}`);
 
           const data = await response.json();
+          console.log("Analytics data fetched:", data);
           setApiData(data);
           setDataReceived(true);
 
+          // Use lowercase category key for userCounts.
           const userCountsKey = updatedCategory.toLowerCase();
 
           setAnimatedValues({
@@ -127,7 +148,7 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     } else {
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
-      return `${hours}hrs ${minutes.toFixed(1)}min`;
+      return `${hours} hrs ${minutes.toFixed(1)} min`;
     }
   };
 
@@ -143,6 +164,9 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     apiData || defaultMetrics;
   const totalTimeSpentFormatted = formatTime(totalTimeSpent);
 
+  // For animations
+  const [uniqueVisitorsClicked, setUniqueVisitorsClicked] = useState(false);
+  const [animationComplete, setAnimationComplete] = useState(false);
   const springValues = useSpring({
     to: {
       totalSessions: animatedValues.totalSessions,
@@ -194,71 +218,79 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
   });
 
   return (
-    <div className="metrics-grid">
-      {updatedMetrics.map((item, index) => (
-        <div
-          key={index}
-          className={`metric-card ${activeMatrix === item.title ? "active" : ""}`}
-          onClick={() => {
-            if (item.title === "Unique Visitors") {
-              setUniqueVisitorsClicked(!uniqueVisitorsClicked);
-            }
-            item.showLink && setActiveMatrix(item.title);
-          }}
-        >
-          <div className="metric-icon">{item.icon}</div>
-          <div className="metric-content">
-            <p className="metric-title">
-              {item.title === "Unique Visitors" && uniqueVisitorsClicked
-                ? "Returned Visitors"
-                : item.title}
-            </p>
-            <h2 className="metric-value">
-              <animated.div>
-                {item.title === "Total Sessions" && (
-                  <animated.span>
-                    {springValues.totalSessions.to((val) => Math.floor(val))}
-                  </animated.span>
+    <div className="metrics-container">
+      {loading && <div>Loading...</div>}
+      {error && <div className="error">{error}</div>}
+      {apiData && (
+        <div className="metrics-grid">
+          {updatedMetrics.map((item, index) => (
+            <div
+              key={index}
+              className={`metric-card ${
+                activeMatrix === item.title ? "active" : ""
+              }`}
+              onClick={() => {
+                if (item.title === "Unique Visitors") {
+                  setUniqueVisitorsClicked(!uniqueVisitorsClicked);
+                }
+                item.showLink && setActiveMatrix(item.title);
+              }}
+            >
+              <div className="metric-icon">{item.icon}</div>
+              <div className="metric-content">
+                <p className="metric-title">
+                  {item.title === "Unique Visitors" && uniqueVisitorsClicked
+                    ? "Returned Visitors"
+                    : item.title}
+                </p>
+                <h2 className="metric-value">
+                  <animated.div>
+                    {item.title === "Total Sessions" && (
+                      <animated.span>
+                        {springValues.totalSessions.to((val) =>
+                          Math.floor(val)
+                        )}
+                      </animated.span>
+                    )}
+                    {item.title === "Unique Visitors" && (
+                      <animated.span>
+                        {springValues.uniqueVisitors.to((val) =>
+                          Math.floor(val)
+                        )}
+                      </animated.span>
+                    )}
+                    {item.title === "Bounce Rate" && (
+                      <animated.span>
+                        {springValues.bounceRate.to(
+                          (val) => `${val.toFixed(1)}%`
+                        )}
+                      </animated.span>
+                    )}
+                    {item.title === "Time Spent" && (
+                      <animated.span>
+                        {springValues.totalTimeSpent.to((val) =>
+                          formatTime(val)
+                        )}
+                      </animated.span>
+                    )}
+                  </animated.div>
+                </h2>
+              </div>
+              {(item.title === "Total Sessions" ||
+                item.title === "Time Spent") && (
+                <img src="/export.svg" alt="Export icon" className="export-icon" />
+              )}
+              {item.showLink &&
+                item.title !== "Total Sessions" &&
+                item.title !== "Time Spent" && (
+                  <Link to="/details" className="metric-link">
+                    <RightOutlined />
+                  </Link>
                 )}
-                {item.title === "Unique Visitors" && (
-                  <animated.span>
-                    {springValues.uniqueVisitors.to((val) => Math.floor(val))}
-                  </animated.span>
-                )}
-                {item.title === "Bounce Rate" && (
-                  <animated.span>
-                    {springValues.bounceRate.to((val) => `${val.toFixed(1)}%`)}
-                  </animated.span>
-                )}
-                {item.title === "Time Spent" && (
-                  <animated.span>
-                    {springValues.totalTimeSpent.to((val) => formatTime(val))}
-                  </animated.span>
-                )}
-              </animated.div>
-            </h2>
-          </div>
-
-          {/* Conditionally render the export icon for Total Sessions and Time Spent */}
-          {(item.title === "Total Sessions" || item.title === "Time Spent") && (
-            <img
-              src="/export.svg"
-              alt="Export icon"
-              className="export-icon"
-            />
-          )}
-
-          {/* This link only appears if showLink = true AND
-the title isn't 'Total Sessions' or 'Time Spent' */}
-          {item.showLink &&
-            item.title !== "Total Sessions" &&
-            item.title !== "Time Spent" && (
-              <Link to="/session" state={{ uuid, token, url, category }}>
-                <RightOutlined style={{ fontSize: "20px", color: "#fff" }} />
-              </Link>
-            )}
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
