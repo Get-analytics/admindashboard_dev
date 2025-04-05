@@ -25,7 +25,7 @@ const Session = () => {
             pdf: "https://admin-dashboard-backend-rust.vercel.app/api/v1/pdf/session",
             web: "https://admin-dashboard-backend-rust.vercel.app/api/v1/web/session",
             video: "https://admin-dashboard-backend-rust.vercel.app/api/v1/video/session",
-            docx: "https://admin-dashboard-backend-rust.vercel.app/v1/docx/session",
+            docx: "https://admin-dashboard-backend-rust.vercel.app/api/v1/docx/session",
           };
 
           const apiUrl = apiEndpoints[updatedCategory];
