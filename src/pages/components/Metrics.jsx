@@ -98,6 +98,7 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
           const apiEndpoints = {
             pdf: "https://admin-dashboard-backend-rust.vercel.app/api/v1/pdf/analytics",
             weblink: "https://admin-dashboard-backend-rust.vercel.app/api/v1/web/analytics",
+            web: "https://admin-dashboard-backend-rust.vercel.app/api/v1/web/analytics",
             video: "https://admin-dashboard-backend-rust.vercel.app/api/v1/video/analytics",
             docx: "https://admin-dashboard-backend-rust.vercel.app/api/v1/docx/analytics",
           };
