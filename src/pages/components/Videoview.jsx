@@ -199,6 +199,7 @@ const VimeoLikeRetention = () => {
           src={analyticsData && analyticsData.Videosourceurl ? analyticsData.Videosourceurl : videoSrc}
           onLoadedMetadata={handleLoadedMetadata}
           style={{ width: "100%", maxHeight: "600px" }}
+          autoPlay
         >
           <BigPlayButton position="center" />
           <ControlBar autoHide={false}>
