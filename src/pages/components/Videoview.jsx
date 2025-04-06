@@ -79,7 +79,7 @@ const VimeoLikeRetention = () => {
   const { url, category, userInfo } = record || {};
   // Derive uuid from userInfo.uid and token from userInfo.usertoken
   const uuid = userInfo ? userInfo.uid : "";
-  const token = userInfo ? userInfo.token : "";
+  const token = userInfo ? userInfo.usertoken : "";
   console.log("Derived values:", { uuid, token, url, category });
 
   // Use a fallback video URL in case the record context url is missing or incomplete.
