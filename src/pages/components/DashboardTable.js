@@ -36,6 +36,7 @@ const DashboardTable = ({
 }) => {
   const navigate = useNavigate();
   const tokenStr = localStorage.getItem("UUID");
+  const accesstoken = localStorage.getItem("AuthToken");
 
   const { saveRecord } = useRecordContext();
   console.log("saveRecord from context:", saveRecord);
@@ -272,7 +273,7 @@ const DashboardTable = ({
           category: record.category,
           userInfo: {
             uid: tokenStr,
-           
+            usertoken : accesstoken
           },
 
         });
