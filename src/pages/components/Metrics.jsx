@@ -95,9 +95,9 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
           const updatedCategory = category === "Web" ? "weblink" : category;
           const apiEndpoints = {
             pdf: "https://admin-dashboard-backend-rust.vercel.app/api/v1/pdf/analytics",
-            weblink: "http://localhost:5000/api/v1/web/analytics",
-            web: "http://localhost:5000/api/v1/web/analytics",
-            video: "http://localhost:5000/api/v1/video/analytics",
+            weblink: "https://admin-dashboard-backend-rust.vercel.app/api/v1/web/analytics",
+            web: "https://admin-dashboard-backend-rust.vercel.app/api/v1/web/analytics",
+            video: "https://admin-dashboard-backend-rust.vercel.app/api/v1/video/analytics",
             docx: "https://admin-dashboard-backend-rust.vercel.app/api/v1/docx/analytics",
           };
 
