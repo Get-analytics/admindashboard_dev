@@ -253,7 +253,7 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
 
   return (
     <div className="metrics-container">
-      <h2>Metrics</h2>
+     
       {loading && <div>Loading...</div>}
       {error && (
         <div className="error">
