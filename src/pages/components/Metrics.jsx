@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState } from "react";
 import "./Metrics.css"; // Import CSS styles for Metrics
 import { Link } from "react-router-dom";
@@ -62,7 +60,6 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
   const { record } = useRecordContext();
   console.log("Record context:", record);
 
-
   const { url, category, userInfo } = record || {};
   const uuid = userInfo ? userInfo.uid : "";
   const token = userInfo ? userInfo.usertoken : "";
@@ -94,12 +91,13 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
           setError(null);
 
           // Convert category if needed.
+          // When category is "Web", use "weblink" as the API parameter.
           const updatedCategory = category === "Web" ? "weblink" : category;
           const apiEndpoints = {
             pdf: "https://admin-dashboard-backend-rust.vercel.app/api/v1/pdf/analytics",
-            weblink: "https://admin-dashboard-backend-rust.vercel.app/api/v1/web/analytics",
-            web: "https://admin-dashboard-backend-rust.vercel.app/api/v1/web/analytics",
-            video: "https://admin-dashboard-backend-rust.vercel.app/api/v1/video/analytics",
+            weblink: "http://localhost:5000/api/v1/web/analytics",
+            web: "http://localhost:5000/api/v1/web/analytics",
+            video: "http://localhost:5000/api/v1/video/analytics",
             docx: "https://admin-dashboard-backend-rust.vercel.app/api/v1/docx/analytics",
           };
 
@@ -124,7 +122,8 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
           });
 
           // If the response is not OK, throw an error.
-          if (!response.ok) throw new Error(`Error fetching analytics data: ${response.status}`);
+          if (!response.ok)
+            throw new Error(`Error fetching analytics data: ${response.status}`);
 
           const data = await response.json();
           console.log("Analytics data fetched:", data);
@@ -133,12 +132,24 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
 
           // Use lowercase category key for userCounts.
           const userCountsKey = updatedCategory.toLowerCase();
+          // Extract new user count checking for both possible keys ("web" or "weblink")
+          const newUserCount =
+            data.userCounts?.newuser?.[userCountsKey] ||
+            data.userCounts?.newuser?.["web"] ||
+            data.userCounts?.newuser?.["weblink"] ||
+            0;
+          // Extract returned user count checking for both possible keys ("web" or "weblink")
+          const returnedUserCount =
+            data.userCounts?.returneduser?.[userCountsKey] ||
+            data.userCounts?.returneduser?.["web"] ||
+            data.userCounts?.returneduser?.["weblink"] ||
+            0;
 
           // Update animated values from the data, or use default values.
           setAnimatedValues({
             totalSessions: data.totalsession || 0,
-            uniqueVisitors: data.userCounts?.newuser?.[userCountsKey] || 0,
-            returnedVisitors: data.userCounts?.returneduser?.[userCountsKey] || 0,
+            uniqueVisitors: newUserCount,
+            returnedVisitors: returnedUserCount,
             bounceRate: data.bounceRate || 0,
             totalTimeSpent: data.totalTimeSpent || 0,
           });
@@ -177,7 +188,8 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
   // ----------------------------------------------------
   // Extract metric values from API data or default metrics.
   // ----------------------------------------------------
-  const { totalsession, totalTimeSpent, bounceRate, returnedVisitors } = apiData || defaultMetrics;
+  const { totalsession, totalTimeSpent, bounceRate, returnedVisitors } =
+    apiData || defaultMetrics;
   const totalTimeSpentFormatted = formatTime(totalTimeSpent);
 
   // ----------------------------------------------------
@@ -212,6 +224,11 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
   // ----------------------------------------------------
   // Build updated metrics array for rendering.
   // ----------------------------------------------------
+  // Determine the appropriate values for unique (or returned) visitors.
+  const uniqueVisitorValue = uniqueVisitorsClicked
+    ? animatedValues.returnedVisitors
+    : animatedValues.uniqueVisitors;
+
   const updatedMetrics = metrics.map((item) => {
     let updatedTitle = item.title;
     if (item.title === "Unique Visitors" && uniqueVisitorsClicked) {
@@ -223,9 +240,7 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
       case "Unique Visitors":
         return {
           ...item,
-          value: uniqueVisitorsClicked
-            ? (returnedVisitors || 0).toString()
-            : (animatedValues.uniqueVisitors || 0).toString(),
+          value: Math.floor(uniqueVisitorValue).toString(),
         };
       case "Bounce Rate":
         return { ...item, value: `${animatedValues.bounceRate.toFixed(1)}%` };
@@ -236,17 +251,22 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     }
   });
 
-
   return (
     <div className="metrics-container">
       <h2>Metrics</h2>
       {loading && <div>Loading...</div>}
-      {error && <div className="error">Data not available. Showing default values.</div>}
+      {error && (
+        <div className="error">
+          Data not available. Showing default values.
+        </div>
+      )}
       <div className="metrics-grid">
         {updatedMetrics.map((item, index) => (
           <div
             key={index}
-            className={`metric-card ${activeMatrix === item.title ? "active" : ""}`}
+            className={`metric-card ${
+              activeMatrix === item.title ? "active" : ""
+            }`}
             onClick={() => {
               if (item.title === "Unique Visitors") {
                 setUniqueVisitorsClicked(!uniqueVisitorsClicked);
@@ -267,17 +287,23 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
                 <animated.div>
                   {item.title === "Total Sessions" && (
                     <animated.span>
-                      {springValues.totalSessions.to((val) => Math.floor(val))}
+                      {springValues.totalSessions.to((val) =>
+                        Math.floor(val)
+                      )}
                     </animated.span>
                   )}
                   {item.title === "Unique Visitors" && (
                     <animated.span>
-                      {springValues.uniqueVisitors.to((val) => Math.floor(val))}
+                      {springValues.uniqueVisitors.to((val) =>
+                        Math.floor(val)
+                      )}
                     </animated.span>
                   )}
                   {item.title === "Bounce Rate" && (
                     <animated.span>
-                      {springValues.bounceRate.to((val) => `${val.toFixed(1)}%`)}
+                      {springValues.bounceRate.to(
+                        (val) => `${val.toFixed(1)}%`
+                      )}
                     </animated.span>
                   )}
                   {item.title === "Time Spent" && (
@@ -288,8 +314,13 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
                 </animated.div>
               </h2>
             </div>
-            {(item.title === "Total Sessions" || item.title === "Time Spent") && (
-              <img src="/export.svg" alt="Export icon" className="export-icon" />
+            {(item.title === "Total Sessions" ||
+              item.title === "Time Spent") && (
+              <img
+                src="/export.svg"
+                alt="Export icon"
+                className="export-icon"
+              />
             )}
             {item.showLink &&
               item.title !== "Total Sessions" &&
@@ -304,5 +335,3 @@ export default function Metrics({ setActiveMatrix, activeMatrix }) {
     </div>
   );
 }
-
-
