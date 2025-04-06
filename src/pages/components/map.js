@@ -27,10 +27,8 @@ export default function TrafficSource() {
   const { record } = useRecordContext();
   const { uuid, token, url, category } = record || {};
 
-  // Country name cache to prevent multiple requests
   const [countryNameCache, setCountryNameCache] = useState({});
 
-  // Fetch session data from your backend
   useEffect(() => {
     if (uuid && url && category) {
       const fetchSessionData = async () => {
@@ -86,12 +84,10 @@ export default function TrafficSource() {
   }, [uuid, token, url, category]);
 
   useEffect(() => {
-    // Fetch country name by alpha code
     async function fetchCountryName(countryCode) {
       if (countryNameCache[countryCode]) {
         return countryNameCache[countryCode];
       }
-
       try {
         const response = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode.toLowerCase()}`);
         const data = await response.json();
@@ -109,7 +105,6 @@ export default function TrafficSource() {
       return countryCode;
     }
 
-    // Fetch country center from REST Countries API by alpha code
     async function fetchCountryCenter(countryCode) {
       try {
         const response = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode.toLowerCase()}`);
@@ -135,9 +130,9 @@ export default function TrafficSource() {
           return {
             name: countryName,
             coordinates: coords,
-            districts: item.districts ? item.districts.split(", ") : [],
-            states: item.states ? item.states.split(", ") : [],
-            countryCode, // Keep countryCode for reference
+            districts: item.districts ? item.districts.split(",").map(d => d.trim()) : [],
+            states: item.states ? item.states.split(",").map(s => s.trim()) : [],
+            countryCode,
           };
         })
       );
@@ -168,11 +163,11 @@ export default function TrafficSource() {
   ];
 
   const dataSource = selectedMarker
-    ? selectedMarker.states.map((state, index) => ({
+    ? selectedMarker.districts.map((district, index) => ({
         key: index,
         country: selectedMarker.name || "Unknown",
-        state,
-        district: selectedMarker.districts[index] || "No District Data",
+        state: selectedMarker.states.length > 0 ? selectedMarker.states[0] : "Unknown",
+        district: district || "No District Data",
       }))
     : [];
 
@@ -187,7 +182,7 @@ export default function TrafficSource() {
           |{" "}
           <span className={view === "list" ? "active-view" : "inactive-view"} onClick={() => setView("list")}>
             List View
-          </span>{" "}
+          </span>
         </div>
       </div>
 
@@ -212,9 +207,9 @@ export default function TrafficSource() {
                         fill={colorScale(value)}
                         stroke="#FFF"
                         style={{
-                          default: { outline: "2px" },
+                          default: { outline: "none" },
                           hover: { fill: "#7C5832", outline: "none" },
-                          pressed: { outline: "2px" },
+                          pressed: { outline: "none" },
                         }}
                       />
                     );
@@ -294,8 +289,7 @@ export default function TrafficSource() {
 
       {selectedMarker && (
         <Modal
-         
-          visible={true}
+          open={true}
           onCancel={() => setSelectedMarker(null)}
           footer={null}
           centered
