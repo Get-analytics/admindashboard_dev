@@ -79,7 +79,7 @@ const VimeoLikeRetention = () => {
   const { url, category, userInfo } = record || {};
   // Derive uuid from userInfo.uid and token from userInfo.usertoken
   const uuid = userInfo ? userInfo.uid : "";
-  const token = userInfo ? userInfo.usertoken : "";
+  const token = userInfo ? (userInfo.usertoken || userInfo.token) : "";
   console.log("Derived values:", { uuid, token, url, category });
 
   // Use a fallback video URL in case the record context url is missing or incomplete.
@@ -98,7 +98,7 @@ const VimeoLikeRetention = () => {
           console.error("Missing required record values:", { uuid, token, videoSrc, category });
           return;
         }
-        const endpoint = "http://localhost:5000/api/v1/video/viewanalytics";
+        const endpoint = "https://admin-dashboard-backend-rust.vercel.app/api/v1/video/viewanalytics";
         console.log("Sending POST to:", endpoint);
         const response = await fetch(endpoint, {
           method: "POST",
