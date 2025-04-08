@@ -105,6 +105,7 @@ const Linkpage = () => {
 
   const flattenDashboardData = (data) => {
     let flattenedData = {};
+  
     Object.keys(data).forEach((category) => {
       flattenedData[category] = data[category].map((record, index) => ({
         key: `${category}-${index}-${record.url}`,
@@ -113,8 +114,10 @@ const Linkpage = () => {
         category: category,
         createdDate: record.createdDate,
         timeAgo: record.timeAgo,
+        expiration: record.expiration || "No expiration", // Add expiration, defaulting to "No expiration" if not present
       }));
     });
+  
     return flattenedData;
   };
   
