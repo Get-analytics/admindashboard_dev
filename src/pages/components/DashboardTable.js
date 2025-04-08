@@ -153,6 +153,17 @@ const DashboardTable = ({
     return now;
   };
 
+  // Helper: Check if a record has expired
+  const isExpired = (createdDate, expirationDate) => {
+    console.log(createdDate, expirationDate)
+    const createdDateObj = new Date(createdDate);  // Date the record was created
+    const expirationDateObj = new Date(expirationDate); // Expiration date from the API
+    
+    // Compare the expiration date to the current date
+    return new Date() > expirationDateObj; // If the current date is after the expiration, it's expired
+  };
+  
+
   // Map the data without altering the fileName property
   const sortedData = Object.values(data)
     .flat()
@@ -161,6 +172,7 @@ const DashboardTable = ({
       return {
         ...record,
         parsedTimeAgo: parseTimeAgoToDate(record.timeAgo),
+       
       };
     })
     .sort((a, b) => b.parsedTimeAgo - a.parsedTimeAgo);
@@ -211,101 +223,109 @@ const DashboardTable = ({
       sortDirections: ["descend", "ascend"],
     },
     {
+      title: "Expiration",
+      dataIndex: "expiration",
+      key: "expiration",
+      align: "center",
+      render: (expiration) => {
+        const expiredStyle = expiration === "Expired" ? { color: "red" } : { color: "green" };
+        return <span style={expiredStyle}>{expiration === "Expired" ? "Expired" : `${expiration} left`}</span>;
+      },
+    },
+    
+    {
       title: "Analytics View",
       key: "analytics",
       align: "center",
       render: (text, record) => (
-<Button
-  style={{
-    backgroundColor: "#7C5832",
-    borderRadius: "20px",
-    height: "30px",
-    cursor: "pointer",
-    border: "none",
-    color: "#fff",
-    padding: "0 12px",
-    fontFamily: "'DM Sans', sans-serif",
-    fontWeight: "300",
-  }}
-  onClick={() => {
-    try {
-      console.log("👉 Button clicked: View Analytics");
-  
-      // Check if the URL is valid before splitting
-      if (!record.url || typeof record.url !== "string") {
-        console.error("❌ Error: Invalid URL in record:", record.url);
-        alert("Invalid URL. Please check the record.");
-        return;
-      }
-  
-      console.log(`✅ URL Found: ${record.url}`);
-  
-      // Split the URL to extract the analyticsId
-      const urlParts = record.url.split("https://view.sendnow.live/");
-      let analyticsId = urlParts[1];
-  
-      // Log split URL info
-      console.log("🔎 URL Parts:", urlParts);
-      console.log(`📊 Extracted Analytics ID: ${analyticsId || "N/A"}`);
-  
-      // Remove leading slash if present
-      if (analyticsId && analyticsId.startsWith("/")) {
-        analyticsId = analyticsId.replace(/^\//, ""); // Remove leading slash
-        console.log(`✅ Cleaned Analytics ID: ${analyticsId}`);
-      }
-  
-      // Check if analyticsId is valid
-      if (analyticsId) {
-        console.log("✅ Valid Analytics ID. Proceeding to save and navigate...");
-  
-        // Log record info before saving
-        console.log("📚 Record Info:", {
-          uuid: record.key,
-          token: tokenStr,
-          url: record.url,
-          category: record.category,
-        });
-  
-        // Save record
-        saveRecord({
-          uuid: record.key,
-          url: record.url,
-          category: record.category,
-          userInfo: {
-            uid: tokenStr,
-            usertoken : accesstoken
-          },
+        <Button
+          style={{
+            backgroundColor: "#7C5832",
+            borderRadius: "20px",
+            height: "30px",
+            cursor: "pointer",
+            border: "none",
+            color: "#fff",
+            padding: "0 12px",
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: "300",
+          }}
+          onClick={() => {
+            try {
+              console.log("👉 Button clicked: View Analytics");
 
-        });
+              // Check if the URL is valid before splitting
+              if (!record.url || typeof record.url !== "string") {
+                console.error("❌ Error: Invalid URL in record:", record.url);
+                alert("Invalid URL. Please check the record.");
+                return;
+              }
 
-        console.log(record.key,tokenStr,record.url,record.category)
-  
-        console.log("✅ Record saved successfully!");
-  
-        // Log navigation info
-        console.log(`🚀 Navigating to /dashboard/${record.category}/${analyticsId}`);
-        navigate(`/dashboard/${record.category}/${analyticsId}`, {
-          state: {
-            uuid: record.key,
-            token: tokenStr,
-            url: record.url,
-            category: record.category,
-          },
-        });
-      } else {
-        console.error("❌ Error: Invalid URL format. No analytics ID found.");
-        alert("Invalid URL format. Unable to extract analytics ID.");
-      }
-    } catch (error) {
-      console.error("❌ Unexpected error occurred:", error);
-      alert(`An error occurred: ${error.message}`);
-    }
-  }}
-  
->
-  View Analytics
-</Button>
+              console.log(`✅ URL Found: ${record.url}`);
 
+              // Split the URL to extract the analyticsId
+              const urlParts = record.url.split("https://view.sendnow.live/");
+              let analyticsId = urlParts[1];
+
+              // Log split URL info
+              console.log("🔎 URL Parts:", urlParts);
+              console.log(`📊 Extracted Analytics ID: ${analyticsId || "N/A"}`);
+
+              // Remove leading slash if present
+              if (analyticsId && analyticsId.startsWith("/")) {
+                analyticsId = analyticsId.replace(/^\//, ""); // Remove leading slash
+                console.log(`✅ Cleaned Analytics ID: ${analyticsId}`);
+              }
+
+              // Check if analyticsId is valid
+              if (analyticsId) {
+                console.log("✅ Valid Analytics ID. Proceeding to save and navigate...");
+
+                // Log record info before saving
+                console.log("📚 Record Info:", {
+                  uuid: record.key,
+                  token: tokenStr,
+                  url: record.url,
+                  category: record.category,
+                });
+
+                // Save record
+                saveRecord({
+                  uuid: record.key,
+                  url: record.url,
+                  category: record.category,
+                  userInfo: {
+                    uid: tokenStr,
+                    usertoken: accesstoken,
+                  },
+                });
+
+                console.log(record.key, tokenStr, record.url, record.category)
+
+                console.log("✅ Record saved successfully!");
+
+                // Log navigation info
+                console.log(`🚀 Navigating to /dashboard/${record.category}/${analyticsId}`);
+                navigate(`/dashboard/${record.category}/${analyticsId}`, {
+                  state: {
+                    uuid: record.key,
+                    token: tokenStr,
+                    url: record.url,
+                    category: record.category,
+                  },
+                });
+              } else {
+                console.error("❌ Error: Invalid URL format. No analytics ID found.");
+                alert("Invalid URL format. Unable to extract analytics ID.");
+              }
+            } catch (error) {
+              console.error("❌ Unexpected error occurred:", error);
+              alert(`An error occurred: ${error.message}`);
+            }
+          }}
+        >
+          View Analytics
+        </Button>
       ),
     },
     {
@@ -344,29 +364,24 @@ const DashboardTable = ({
           }}
         />
       ) : (
-        <div style={{ textAlign: "center", marginTop: "20px" }}></div>
-      )}
-      {loading && (
+        // Instead of displaying "No records found", show loader from ANTD
         <div style={{ textAlign: "center", marginTop: "20px" }}>
           <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
         </div>
       )}
-      <ConfigProvider modal={{ classNames, styles: modalStyles }}>
-        <Modal
-          title="Confirm Delete"
-          open={isModalOpen}
-          onOk={handleOk}
-          onCancel={handleCancel}
-          okText="Yes"
-          cancelText="No"
-        >
-          <p>
-            Are you sure you want to delete this record? This action cannot be undone.
-          </p>
-        </Modal>
-      </ConfigProvider>
+      <Modal
+        title="Delete Confirmation"
+        visible={isModalOpen}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        cancelText="Cancel"
+        okText="Delete"
+      >
+        <p>Are you sure you want to delete this record?</p>
+      </Modal>
     </>
   );
+  
 };
 
 export default DashboardTable;
