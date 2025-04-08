@@ -202,78 +202,94 @@ const Linkpage = () => {
     }
   };
 
-const handleGenerateLink = async (type) => {
-  if (type === "url" && !url) {
-    toast.warn("Please enter a URL.");
-    return;
-  }
-  if (type === "file" && !file) {
-    toast.warn("Please upload a file.");
-    return;
-  }
-  setIsButtonDisabled(true);
-  setUploading(true);
-  setUploadProgress(0);
-
-  // Function to generate 5 random alphanumeric characters
-  const generateRandomId = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let randomId = "";
-    for (let i = 0; i < 5; i++) {
-      randomId += chars.charAt(Math.floor(Math.random() * chars.length));
+  
+  const handleGenerateLink = async (type) => {
+    if (type === "url" && !url) {
+      toast.warn("Please enter a URL.");
+      return;
     }
-    return randomId;
-  };
-
-  const randomId = generateRandomId(); // Generate 5-character random ID
-  let apiEndpoint = "";
-  let payload = null;
-  let headers = {};
-
-  try {
-    if (type === "url") {
-      apiEndpoint = "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/linkupload";
-      payload = { shortId: randomId, originalUrl: url, uuid: userInfo.uuid };
-      headers["Content-Type"] = "application/json";
-    } else if (type === "file") {
-      apiEndpoint = "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/fileupload";
-      payload = new FormData();
-      payload.append("shortId", randomId);
-      payload.append("file", file);
-      payload.append("uuid", userInfo.uuid);
+    if (type === "file" && !file) {
+      toast.warn("Please upload a file.");
+      return;
     }
-    const response = await axios.post(apiEndpoint, payload, {
-      headers,
-      onUploadProgress: (progressEvent) => {
-        const percent = Math.floor((progressEvent.loaded * 100) / progressEvent.total);
-        setUploadProgress(percent);
-      },
-    });
-    if (response.status === 200) {
-      let link = "";
-      if (type === "url" && response.data.shortenedUrl) {
-        link = `https://filescence-rho.vercel.app/${response.data.shortenedUrl.shortId}`;
-      } else if (type === "file" && response.data.shortId) {
-        link = `https://filescence-rho.vercel.app/${response.data.shortId}`;
-      }
-      setGeneratedLink(link);
-      setIsModalVisible(true);
-      toast.success("Upload successful! Your shortened link is ready.");
-      fetchDashboardData(userInfo.authToken, userInfo.uuid);
-    } else {
-      toast.error("Failed to upload.");
-    }
-  } catch (error) {
-    toast.error("Error generating link: " + error.message);
-  } finally {
-    setIsButtonDisabled(false);
-    setUploading(false);
+    setIsButtonDisabled(true);
+    setUploading(true);
     setUploadProgress(0);
-    setFile(null);
-    setUrl("");
-  }
-};
-
+  
+    // Function to generate 5 random alphanumeric characters
+    const generateRandomId = () => {
+      const chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      let randomId = "";
+      for (let i = 0; i < 5; i++) {
+        randomId += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return randomId;
+    };
+  
+    const randomId = generateRandomId(); // Generate 5-character random ID
+    let apiEndpoint = "";
+    let payload = null;
+    let headers = {};
+  
+    try {
+      if (type === "url") {
+        apiEndpoint =
+          "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/linkupload";
+        payload = { shortId: randomId, originalUrl: url, uuid: userInfo.uuid };
+        headers["Content-Type"] = "application/json";
+      } else if (type === "file") {
+        apiEndpoint = "https://admin-dashboard-backend-gqqz.onrender.com/api/v1/fileupload";
+        payload = new FormData();
+        payload.append("shortId", randomId);
+        payload.append("file", file);
+        payload.append("uuid", userInfo.uuid);
+      }
+  
+      const response = await axios.post(apiEndpoint, payload, {
+        headers,
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.floor(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percent);
+        },
+      });
+  
+      if (response.status === 200) {
+        let link = "";
+        if (type === "url" && response.data.shortenedUrl) {
+          link = `https://filescence-rho.vercel.app/${response.data.shortenedUrl.shortId}`;
+        } else if (type === "file" && response.data.shortId) {
+          link = `https://filescence-rho.vercel.app/${response.data.shortId}`;
+        }
+        setGeneratedLink(link);
+        setIsModalVisible(true);
+        toast.success("Upload successful! Your shortened link is ready.");
+        fetchDashboardData(userInfo.authToken, userInfo.uuid);
+      } else {
+        // If response status is not 200, show the returned message (for example if 404, 400, etc.)
+        toast.error(response.data.message || "Failed to upload.");
+      }
+    } catch (error) {
+      if (error.response) {
+        const errorMessage = error.response.data?.message || "Something went wrong.";
+        toast.error(errorMessage);
+      } else if (error.request) {
+        toast.error("No response from the server. Please try again.");
+      } else {
+        toast.error("Error generating link: " + error.message);
+      }
+    }
+     finally {
+      setIsButtonDisabled(false);
+      setUploading(false);
+      setUploadProgress(0);
+      setFile(null);
+      setUrl("");
+    }
+  };
+  
 
   const handleCopy = async () => {
     try {
