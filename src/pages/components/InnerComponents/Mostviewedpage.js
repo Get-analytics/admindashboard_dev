@@ -8,21 +8,23 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import "./Mostviewpage.css";
 import { FileSearchOutlined } from "@ant-design/icons";
+import { Modal, Table, Button } from "antd";
+import "./Mostviewpage.css";
 import { useRecordContext } from "../../../context/RecordContext";
 
 const Mostviewpage = () => {
   const { record } = useRecordContext();
-  // Correct destructuring to get uid from userInfo
+  // Destructure to get uid from userInfo
   const { uuid, url, category, userInfo: { uid } = {} } = record || {};
   console.log(uuid, uid, url, category, "data from most viewed");
 
-  const [analyticsData, setAnalyticsData] = useState(null); // State to hold the response data
-  const [loading, setLoading] = useState(true); // Loading state to show a loader until data is fetched
-  const [currentTextIndex, setCurrentTextIndex] = useState(0); // State for navigating between selected texts
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentTextIndex, setCurrentTextIndex] = useState(0);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // Fetch analytics data when component mounts
+  // Fetch analytics data when the component mounts.
   useEffect(() => {
     const fetchAnalyticsData = async () => {
       console.log(category + " category", url + " url", "most view");
@@ -31,7 +33,6 @@ const Mostviewpage = () => {
       try {
         if (!uuid || !url || !category || !uid) return;
 
-        // Determine the API endpoint dynamically based on category
         const endpoint =
           category === "docx" || category === "doc"
             ? "https://admin-dashboard-backend-rust.vercel.app/api/v1/docx/viewanalytics"
@@ -39,9 +40,7 @@ const Mostviewpage = () => {
 
         const response = await fetch(endpoint, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ uuid, token: uid, url, category }),
         });
 
@@ -50,45 +49,45 @@ const Mostviewpage = () => {
         }
 
         const data = await response.json();
-        setAnalyticsData(data); // Set the response data to state
+        setAnalyticsData(data);
       } catch (error) {
         console.error("Error fetching analytics data:", error);
       } finally {
-        setLoading(false); // Set loading to false once data is fetched
+        setLoading(false);
       }
     };
 
     fetchAnalyticsData();
-  }, [uuid, uid, url, category]); // Fetch data when any of these values change
-  
+  }, [uuid, uid, url, category]);
+
   if (loading) {
-    return <div>Loading...</div>; // Show loading message while waiting for data
+    return <div>Loading...</div>;
   }
 
-  // Extract data from the response
-  const { totalPageTime, mostSelectedTexts, totalPages, averageTimeReadable } = analyticsData || {};
+  // Destructure analytics data.
+  const {
+    totalPageTime,
+    mostSelectedTexts,
+    mostClickedLinks,
+    totalPages,
+    averageTimeReadable,
+  } = analyticsData || {};
 
-  // Prepare data for the bar chart dynamically
-// Prepare data for the bar chart dynamically
-// Prepare data for the bar chart dynamically
-const pageData = Object.entries(totalPageTime || {}).map(([page, timeInSeconds]) => {
-  // Convert seconds to hours, minutes, and seconds
-  const hours = Math.floor(timeInSeconds / 3600); // 3600 seconds in an hour
-  const minutes = Math.floor((timeInSeconds % 3600) / 60); // Remainder in minutes
-  const seconds = timeInSeconds % 60; // Remainder in seconds
-  
-  // Store the formatted time in hours, minutes, and seconds
-  const formattedTime = `${hours > 0 ? hours + 'h ' : ''}${minutes}m ${seconds}s`;
+  // Prepare bar chart data.
+  const pageData = Object.entries(totalPageTime || {}).map(([page, timeInSeconds]) => {
+    const hours = Math.floor(timeInSeconds / 3600);
+    const minutes = Math.floor((timeInSeconds % 3600) / 60);
+    const seconds = timeInSeconds % 60;
+    const formattedTime = `${hours > 0 ? hours + 'h ' : ''}${minutes}m ${seconds}s`;
 
-  return {
-    page: `Page ${page}`,
-    time: timeInSeconds / 60, // Still use minutes for the chart
-    timeFormatted: formattedTime, // Store the formatted time
-  };
-});
+    return {
+      page: `Page ${page}`,
+      time: timeInSeconds / 60,
+      timeFormatted: formattedTime,
+    };
+  });
 
-
-  // Handle navigating to the next or previous selected text
+  // Navigation for selected texts.
   const handleNavigation = (direction) => {
     if (mostSelectedTexts && mostSelectedTexts.length > 0) {
       const newIndex = currentTextIndex + direction;
@@ -98,10 +97,10 @@ const pageData = Object.entries(totalPageTime || {}).map(([page, timeInSeconds])
     }
   };
 
-  // Get the current selected text for the display
-  const currentSelectedText = mostSelectedTexts && mostSelectedTexts[currentTextIndex];
+  const currentSelectedText =
+    mostSelectedTexts && mostSelectedTexts[currentTextIndex];
 
-  // Function to truncate text to 250 characters and add ellipsis if it's too long
+  // Truncate text.
   const truncateText = (text) => {
     if (text && text.length > 200) {
       return text.slice(0, 200) + "...";
@@ -109,29 +108,53 @@ const pageData = Object.entries(totalPageTime || {}).map(([page, timeInSeconds])
     return text;
   };
 
-  // Format the average time into a readable string
+  // Format time.
   const formatTime = (timeObj) => {
     const { hours, minutes, seconds } = timeObj || {};
     return `${hours > 0 ? hours + 'h ' : ''}${minutes > 0 ? minutes + 'm ' : ''}${seconds}s`;
   };
 
+  // Columns for the clicked links table.
+  const clickedLinksColumns = [
+    {
+      title: "Page",
+      dataIndex: "page",
+      key: "page",
+      render: (page) => `Page ${page}`,
+    },
+    {
+      title: "Link",
+      dataIndex: "clickedLink",
+      key: "clickedLink",
+    },
+    {
+      title: "Count",
+      dataIndex: "count",
+      key: "count",
+    },
+  ];
+
   return (
     <div className="analytics-container">
       {/* Header with Icon and Sub-heading */}
       <div className="session-header">
-  <div className="session-icon">
-    <FileSearchOutlined style={{ fontSize: '24px', color: '#7C5832' }} /> {/* Use the Ant Design FileSearch icon */}
-  </div>
-  <div className="sub-heading">
-    <p className="click-count">Most viewed Page</p>
-  </div>
-</div>
+        <div className="session-icon">
+          <FileSearchOutlined style={{ fontSize: "24px", color: "#7C5832" }} />
+        </div>
+        <div className="sub-heading">
+          <p className="click-count">Most viewed Page</p>
+        </div>
+      </div>
 
       {/* Most Viewed Page Section */}
       <div className="page-views">
         <div className="details-container">
           <div className="file-info">
-            <img src="https://t3.ftcdn.net/jpg/02/26/42/06/360_F_226420649_vlXjp3JyUrnW5EHY00dvhbqkVdUfyafj.jpg" alt="PDF Icon" className="file-image" />
+            <img
+              src="https://t3.ftcdn.net/jpg/02/26/42/06/360_F_226420649_vlXjp3JyUrnW5EHY00dvhbqkVdUfyafj.jpg"
+              alt="PDF Icon"
+              className="file-image"
+            />
             <div className="text-info">
               <p className="duration">{formatTime(averageTimeReadable)}</p>
               <p className="average-time">Avg Time Spend</p>
@@ -151,16 +174,12 @@ const pageData = Object.entries(totalPageTime || {}).map(([page, timeInSeconds])
                 <YAxis hide={true} domain={[0, "dataMax + 2"]} />
                 <Tooltip
                   formatter={(value, name, props) => {
-                    // Get the formatted time for the tooltip
                     const { timeFormatted } = props.payload || {};
-                    return [`${timeFormatted}`, "Time Spent"]; // Display formatted time
-  }}
-  
-  labelStyle={{ color: "#fff" }}
-  cursor={{ fill: "rgba(0,0,0,0.1)" }}
-/>
-
-
+                    return [`${timeFormatted}`, "Time Spent"];
+                  }}
+                  labelStyle={{ color: "#fff" }}
+                  cursor={{ fill: "rgba(0,0,0,0.1)" }}
+                />
                 <Bar dataKey="time" fill="#7C5832" barSize={20} radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -170,11 +189,19 @@ const pageData = Object.entries(totalPageTime || {}).map(([page, timeInSeconds])
       </div>
 
       {/* Most Selected Text Section */}
-      <div className="highlighted-text">
-        <h2 className="title-header">Most Selected Text</h2>
+      <div className="highlighted-text" style={{ position: "relative" }}>
+        <div className="header-with-button" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h2 className="title-header">Most Selected Text</h2>
+          {/* New Button with custom class to open clicked links modal */}
+          <Button className="custom-button" onClick={() => setIsModalVisible(true)}>
+            Clicked Links
+          </Button>
+        </div>
         {currentSelectedText ? (
           <div className="text-box">
-            <p className="quote-text">{truncateText(currentSelectedText.selectedText)}</p>
+            <p className="quote-text">
+              {truncateText(currentSelectedText.selectedText)}
+            </p>
             <div className="page-details">
               <p className="page-tag">Page</p>
               <p className="page-number">{currentSelectedText.page}</p>
@@ -200,6 +227,21 @@ const pageData = Object.entries(totalPageTime || {}).map(([page, timeInSeconds])
           <p>No highlighted text available.</p>
         )}
       </div>
+
+      {/* Modal for Clicked Links */}
+      <Modal
+       
+        visible={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={null}
+      >
+        <Table
+          columns={clickedLinksColumns}
+          dataSource={mostClickedLinks}
+          rowKey={(record) => `${record.clickedLink}-${record.page}`}
+          pagination={false}
+        />
+      </Modal>
     </div>
   );
 };
