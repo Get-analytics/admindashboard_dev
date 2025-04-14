@@ -31,7 +31,7 @@ const LoadingWave = () => {
           width: 20px;
           height: 10px;
           margin: 0 5px;
-          background-color: #3498db;
+          background-color: #7C5832;
           border-radius: 5px;
           animation: loading-wave-animation 1s ease-in-out infinite;
         }
