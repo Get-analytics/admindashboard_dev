@@ -194,4 +194,21 @@
   .button-nav:hover {
     background: #dcd3c7;
   }
+
+ /* Custom button styling for the Clicked Links button */
+.custom-button {
+  background-color: #e8e2db !important;
+  border: none !important;
+  border-radius: 4px !important;
+  color: #3a2e26 !important;
+  font-weight: bold;
+}
+
+.custom-button:hover,
+.custom-button:focus {
+  background-color: #dcd3c7 !important;
+  color: #3a2e26 !important;
+  border: none !important;
+}
+
   
