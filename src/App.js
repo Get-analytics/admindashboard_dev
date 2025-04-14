@@ -10,6 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import IframeView from "./pages/components/InnerComponents/iframeview";
 import { RecordProvider } from "./context/RecordContext";
 import Register from "./pages/components/Register";
+import LoadingWave from "./pages/components/Loader/Loader";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -25,7 +26,7 @@ const App = () => {
   }, []);
 
   if (loading) {
-    return <div className="loading-screen">Loading...</div>;
+    return <LoadingWave></LoadingWave>;
   }
 
   return (
