@@ -12,6 +12,7 @@ import Session from "./components/InnerComponents/session";
 import Device from "./components/InnerComponents/device";
 import { useRecordContext } from "../context/RecordContext";
 import VideoWithAdvancedFeatures from "./components/Videoview";
+import LoadingWave from "./components/Loader/Loader";
 
 const Dashboard = () => {
   const { category, analyticsId } = useParams();
@@ -72,7 +73,7 @@ const Dashboard = () => {
   }, [record]);
 
   if (loading) {
-    return <div className="loading-screen">Loading...</div>;
+    return <LoadingWave></LoadingWave>;
   }
 
   const renderMainContent = () => {
