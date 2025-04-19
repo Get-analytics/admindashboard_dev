@@ -253,42 +253,38 @@ const DashboardTable = ({
           onClick={() => {
             try {
               console.log("👉 Button clicked: View Analytics");
-
-              // Check if the URL is valid before splitting
+          
+              // Check if the URL is valid
               if (!record.url || typeof record.url !== "string") {
                 console.error("❌ Error: Invalid URL in record:", record.url);
                 alert("Invalid URL. Please check the record.");
                 return;
               }
-
+          
               console.log(`✅ URL Found: ${record.url}`);
-
-              // Split the URL to extract the analyticsId
-              const urlParts = record.url.split("https://view.sendnow.live/");
-              let analyticsId = urlParts[1];
-
-              // Log split URL info
-              console.log("🔎 URL Parts:", urlParts);
-              console.log(`📊 Extracted Analytics ID: ${analyticsId || "N/A"}`);
-
-              // Remove leading slash if present
-              if (analyticsId && analyticsId.startsWith("/")) {
-                analyticsId = analyticsId.replace(/^\//, ""); // Remove leading slash
-                console.log(`✅ Cleaned Analytics ID: ${analyticsId}`);
+          
+              // Normalize and extract the analytics ID
+              let analyticsId = "";
+          
+              try {
+                const formattedUrl = record.url.startsWith("http")
+                  ? record.url
+                  : `https://${record.url}`;
+                const urlObj = new URL(formattedUrl);
+                const pathname = urlObj.pathname; // e.g., /yrCYs
+                analyticsId = pathname.replace(/^\/+/, ""); // Remove leading slash
+              } catch (e) {
+                console.error("❌ Error parsing URL:", e);
+                alert("Invalid URL format. Unable to parse analytics ID.");
+                return;
               }
-
+          
+              console.log("📊 Extracted Analytics ID:", analyticsId || "N/A");
+          
               // Check if analyticsId is valid
               if (analyticsId) {
                 console.log("✅ Valid Analytics ID. Proceeding to save and navigate...");
-
-                // Log record info before saving
-                console.log("📚 Record Info:", {
-                  uuid: record.key,
-                  token: tokenStr,
-                  url: record.url,
-                  category: record.category,
-                });
-
+          
                 // Save record
                 saveRecord({
                   uuid: record.key,
@@ -299,13 +295,11 @@ const DashboardTable = ({
                     usertoken: accesstoken,
                   },
                 });
-
-                console.log(record.key, tokenStr, record.url, record.category)
-
+          
                 console.log("✅ Record saved successfully!");
-
-                // Log navigation info
                 console.log(`🚀 Navigating to /dashboard/${record.category}/${analyticsId}`);
+          
+                // Navigate to dashboard page
                 navigate(`/dashboard/${record.category}/${analyticsId}`, {
                   state: {
                     uuid: record.key,
@@ -323,6 +317,7 @@ const DashboardTable = ({
               alert(`An error occurred: ${error.message}`);
             }
           }}
+          
         >
           View Analytics
         </Button>
