@@ -259,9 +259,9 @@ const Linkpage = () => {
       if (response.status === 200) {
         let link = "";
         if (type === "url" && response.data.shortenedUrl) {
-          link = `www.sd4.live/${response.data.shortenedUrl.shortId}`;
+          link = `https://sd4.live/${response.data.shortenedUrl.shortId}`;
         } else if (type === "file" && response.data.shortId) {
-          link = `www.sd4.live/${response.data.shortId}`;
+          link = `https://.sd4.live/${response.data.shortId}`;
         }
         setGeneratedLink(link);
         setIsModalVisible(true);
